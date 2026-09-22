@@ -73,8 +73,8 @@ print(json.dumps({
     "name": "lightwell-remote",
     "online": True,
     "storage": {"blobStoreName": "default", "strictContentTypeValidation": True},
-    "proxy": {"remoteUrl": url, "contentMaxAge": 1440, "metadataMaxAge": 1440},
-    "negativeCache": {"enabled": True, "timeToLive": 1440},
+    "proxy": {"remoteUrl": url, "contentMaxAge": 1440, "metadataMaxAge": 60},
+    "negativeCache": {"enabled": True, "timeToLive": 60},
     "httpClient": http_client,
     "maven": {
         "versionPolicy": "RELEASE",
@@ -91,8 +91,16 @@ HTTP=$(curl -sS -o "$STATE/nexus-repo.out" -w "%{http_code}" \
   --data-binary @"$STATE/nexus-repo.json" || true)
 
 if [[ "$HTTP" == "400" ]] && grep -q 'already exists\|Duplicate' "$STATE/nexus-repo.out" 2>/dev/null; then
+  UPDATE=$(curl -sS -o "$STATE/nexus-repo.out" -w "%{http_code}" \
+    -u "admin:${ADMIN_PASS}" -X PUT \
+    "http://127.0.0.1:${HOST_PORT}/service/rest/v1/repositories/maven/proxy/lightwell-remote" \
+    -H "Content-Type: application/json" \
+    --data-binary @"$STATE/nexus-repo.json" || true)
+  echo "Proxy lightwell-remote already existed; update HTTP $UPDATE"
+  if [[ "$UPDATE" != "200" && "$UPDATE" != "204" ]]; then
+    echo "Could not update cache ages. The existing proxy is unchanged; continuing to copy a sample jar."
+  fi
   HTTP=200
-  echo "Proxy lightwell-remote already exists."
 fi
 
 echo "Repository API HTTP $HTTP"
@@ -102,9 +110,13 @@ if [[ "$HTTP" != "200" && "$HTTP" != "201" && "$HTTP" != "204" ]]; then
   exit 1
 fi
 
+export LIGHTWELL_COPY_USER=admin
+export LIGHTWELL_COPY_PASSWORD="$ADMIN_PASS"
+"$(dirname "$0")/copy-sample.sh" nexus
+
 echo
 echo "Nexus UI:   http://127.0.0.1:${HOST_PORT}/"
 echo "Login:      admin / ${ADMIN_PASS}"
-echo "Proxy repo: lightwell-remote  (Maven layout policy STRICT)"
+echo "Proxy repo: lightwell-remote  (Maven layout policy STRICT, metadata age 60 minutes)"
 echo "Browse:     http://127.0.0.1:${HOST_PORT}/#browse/browse:lightwell-remote"
 echo "Password saved at $PASS_FILE (gitignored)."

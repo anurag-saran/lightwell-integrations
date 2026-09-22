@@ -1,8 +1,9 @@
 # Local demo — Artifactory, Nexus, and SonarQube
 
-Run the three tools on this machine with Podman, then walk Lightwell through them.
-Click paths: [`ARTIFACTORY.md`](ARTIFACTORY.md), [`NEXUS.md`](NEXUS.md),
-[`SONARQUBE.md`](SONARQUBE.md).
+After Nexus or Artifactory is up, `lightwell-remote` on that server can fetch a
+Lightwell jar, and that jar is stored on your machine. Click paths:
+[`ARTIFACTORY.md`](ARTIFACTORY.md), [`NEXUS.md`](NEXUS.md). SonarQube does not copy
+Lightwell ([`SONARQUBE.md`](SONARQUBE.md)).
 
 ## The RHEL boot ISO does not install these tools
 
@@ -28,14 +29,32 @@ same host ports.
 Default login after a successful script run: `admin` / `Lightwell-demo1`
 (override with `DEMO_PASSWORD`). Demo-only — do not reuse on a shared server.
 
-Public demo feed (no token), which is the default:
+First-time order (public demo feed, no token):
 
 ```bash
-chmod +x scripts/setup-*.sh
-./scripts/setup-artifactory.sh
+chmod +x scripts/setup-*.sh scripts/copy-sample.sh
 ./scripts/setup-nexus.sh
+```
+
+Nexus creates `lightwell-remote` and copies a sample `spring-core` jar. Success is HTTP
+200 and a non-empty file under `.local/integrations/`. Open
+http://127.0.0.1:8083/ and browse `lightwell-remote` to see that cached jar.
+
+```bash
+./scripts/setup-artifactory.sh
+```
+
+Artifactory OSS cannot create the remote over the API. The script prints the clicks.
+Do them, including **Metadata Retrieval Cache Period** `600` and **Missed Retrieval
+Cache Period** `600` ([`ARTIFACTORY.md`](ARTIFACTORY.md)). The script waits a few
+minutes, then copies the same sample jar through Artifactory. Open
+http://127.0.0.1:8082/ui/ and find that jar under `lightwell-remote`.
+
+```bash
 ./scripts/setup-sonarqube.sh
 ```
+
+SonarQube starts for the app-quality gate. It does not connect to Lightwell.
 
 Production Lightwell (service account):
 
@@ -55,11 +74,13 @@ demo. A production Artifactory should use PostgreSQL. The script also pre-create
 
 ## Demo beats
 
-1. **Artifactory** — http://127.0.0.1:8082/ui/ . If the script printed UI clicks, create
-   `lightwell-remote` there (List Remote Artifacts on, Enable Token Authentication off).
-2. **Nexus** — http://127.0.0.1:8083/ , browse `lightwell-remote`, show **Layout policy: Strict**.
+1. **Nexus** — the setup script already copied the sample jar. Browse
+   `lightwell-remote` and point at **Layout policy: Strict**.
+2. **Artifactory** — finish the UI clicks if the script is waiting, then show the same
+   jar in the Artifactory cache.
 3. **What neither did** — the jar is available. Grading whether your app owes a specific
-   test set is upgrade-delta, a separate project.
+   test set is upgrade-delta, a separate internal project. A new `.rhlw` build shows up
+   after the metadata cache age; nothing edits `pom.xml` for you.
 4. **SonarQube** — http://127.0.0.1:9000/ . No Lightwell remote and no upgrade plugin.
    See [`SONARQUBE.md`](SONARQUBE.md).
 

@@ -1,8 +1,11 @@
 # Integrate Lightwell with JFrog Artifactory
 
-Configure Artifactory as a **remote Maven repository** that proxies the Lightwell Network
-Java feed, so builds resolve `.rhlw-*` artifacts through your centralized Artifactory
-instance instead of every job talking to packages.redhat.com.
+After these steps, `lightwell-remote` on your Artifactory server can fetch a Lightwell
+jar, and that jar is stored on your server.
+
+A **remote** is the connection to Lightwell. The **cache** is the local copy made the
+first time something requests a file. You still change `pom.xml` yourself when you want
+a newer build.
 
 Source procedure: [Configure Artifactory to use the Lightwell Network Java repository](https://docs.redhat.com/en/documentation/lightwell_network/current/configure-configure_artifactory_to_use_rhln_repository).
 This guide adds the **public demo** URL mode. Index: [`README.md`](README.md).
@@ -44,27 +47,48 @@ Local Podman start: [`DEMO-LOCAL.md`](DEMO-LOCAL.md) and `scripts/setup-artifact
 
 5. Under **Maven Settings**, check **List Remote Artifacts** so the catalog is browsable
    in the Artifactory UI.
-6. Confirm **Enable Token Authentication** is **cleared**. Leave remaining fields at
-   defaults.
+6. Confirm **Enable Token Authentication** is **cleared**.
+7. On the same remote, set the cache timers that control new builds (Advanced, or the
+   cache section on the remote — the labels are):
 
-Artifactory OSS blocks creating this remote over REST (that API is Pro-only). Use the UI
-clicks above. `scripts/setup-artifactory.sh` starts the server and prints the same clicks
-when the API refuses.
+   | Field | Value | Why |
+   |---|---|---|
+   | **Metadata Retrieval Cache Period** | `600` seconds | How soon a newly published `.rhlw` version can show up in `maven-metadata.xml` |
+   | **Missed Retrieval Cache Period** | `600` seconds | A version that was missing is retried within 10 minutes |
+   | Retrieval cache for release jars | leave the default (hours) | A release file does not change once it is copied |
+
+   Leave every other field at its default.
+
+Artifactory OSS blocks creating this remote over REST (that API is Pro-only). Use the
+clicks above. `scripts/setup-artifactory.sh` starts the server, prints the clicks, waits
+a few minutes for you to save `lightwell-remote`, then copies a sample jar.
 
 ---
 
 ## Verify
 
-1. Open the `lightwell-remote` repository in Artifactory’s browser.
-2. Navigate to a known path, e.g. `org/springframework/spring-core/`, and confirm `.rhlw-`
-   version directories appear (or cache after a first fetch).
-3. From a test Maven build pointed at Artifactory, resolve a coordinate such as
-   `org.springframework:spring-core:5.3.18.rhlw-00003` (adjust to a version that exists
-   in your tier).
+With Artifactory running and `lightwell-remote` saved:
+
+```bash
+./scripts/copy-sample.sh artifactory
+```
+
+Success is HTTP 200 and a non-empty file under `.local/integrations/` (the script prints
+the path). That file is the local copy. The same jar is now in the Artifactory cache.
+Open `lightwell-remote` in the UI and you should see `spring-core` after this fetch.
 
 If the public-demo remote fails with empty credentials, try a non-empty placeholder in
 User Name / Password. The demo path does not validate credentials for anonymous fetches,
 but some Artifactory UIs reject blank auth fields.
+
+---
+
+## How it stays in sync
+
+Lightwell publishes a new build. After the metadata cache period (10 minutes with the
+settings above), a build that asks for that version copies it into Artifactory. Nothing
+rewrites your `pom.xml`. You do not recreate `lightwell-remote` to sync, and re-running
+the setup script does not download the catalog.
 
 ---
 

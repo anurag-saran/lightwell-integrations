@@ -94,8 +94,23 @@ echo "Artifactory UI:  http://127.0.0.1:${UI_PORT}/ui/"
 echo "Login:           admin / ${DEMO_PASSWORD}"
 echo "Demo password is local-only. Do not reuse it on a shared Artifactory."
 
+artifactory_clicks() {
+  echo "  Administration → Repositories → Create a Repository → Remote → Maven"
+  echo "  Repository Key: lightwell-remote"
+  echo "  URL:            $LW_URL"
+  echo "  Maven Settings: check List Remote Artifacts"
+  echo "  Clear Enable Token Authentication"
+  echo "  Metadata Retrieval Cache Period: 600 seconds"
+  echo "  Missed Retrieval Cache Period:   600 seconds"
+  echo "Full click path: ARTIFACTORY.md"
+}
+
+export LIGHTWELL_COPY_USER="${AUTH%%:*}"
+export LIGHTWELL_COPY_PASSWORD="${AUTH#*:}"
+
 if [[ "$HTTP" == "200" || "$HTTP" == "201" ]]; then
   echo "Remote repo:     lightwell-remote"
+  "$(dirname "$0")/copy-sample.sh" artifactory
   echo "Browse:          http://127.0.0.1:${UI_PORT}/ui/repos/tree/General/lightwell-remote"
   exit 0
 fi
@@ -103,14 +118,28 @@ fi
 if grep -q 'Artifactory Pro' "$STATE/artifactory-repo.out" 2>/dev/null; then
   echo
   echo "Artifactory OSS is up, but this image blocks creating repositories over REST"
-  echo "(Pro-only API). Create the remote in the UI — about one minute:"
-  echo "  Administration → Repositories → Create a Repository → Remote → Maven"
-  echo "  Repository Key: lightwell-remote"
-  echo "  URL:            $LW_URL"
-  echo "  Maven Settings: check List Remote Artifacts"
-  echo "  Clear Enable Token Authentication"
-  echo "Full click path: ARTIFACTORY.md"
-  exit 0
+  echo "(Pro-only API). Create the remote in the UI, then this script will copy a sample jar:"
+  artifactory_clicks
+  echo
+  echo "Waiting up to 3 minutes for lightwell-remote to appear..."
+  READY=0
+  for ((i = 1; i <= 45; i++)); do
+    CODE=$(curl -sS -o /dev/null -w "%{http_code}" -u "$AUTH" \
+      "http://127.0.0.1:${UI_PORT}/artifactory/api/repositories/lightwell-remote" || true)
+    if [[ "$CODE" == "200" ]]; then
+      READY=1
+      break
+    fi
+    sleep 4
+  done
+  if [[ "$READY" == "1" ]]; then
+    "$(dirname "$0")/copy-sample.sh" artifactory
+    echo "Browse:          http://127.0.0.1:${UI_PORT}/ui/repos/tree/General/lightwell-remote"
+    exit 0
+  fi
+  echo "lightwell-remote is still missing. Create it with these clicks, then re-run this script:" >&2
+  artifactory_clicks >&2
+  exit 1
 fi
 
 echo "Repository API HTTP $HTTP" >&2

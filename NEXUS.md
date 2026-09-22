@@ -1,8 +1,11 @@
 # Integrate Lightwell with Sonatype Nexus
 
-Configure Nexus Repository Manager as a **Maven2 (proxy)** repository that fronts the
-Lightwell Network feed, so builds resolve `.rhlw-*` artifacts through your centralized
-Nexus instance.
+After these steps, `lightwell-remote` on your Nexus server can fetch a Lightwell jar,
+and that jar is stored on your server.
+
+A **proxy** is the connection to Lightwell. The **cache** is the local copy made the
+first time something requests a file. You still change `pom.xml` yourself when you want
+a newer build.
 
 Source procedure: [Configure Nexus to use the Lightwell Network repository](https://docs.redhat.com/en/documentation/lightwell_network/current/configure-configure_nexus_to_use_rhln_repository).
 This guide adds the **public demo** URL mode. Index: [`README.md`](README.md).
@@ -34,6 +37,14 @@ Local Podman start: [`DEMO-LOCAL.md`](DEMO-LOCAL.md) and `scripts/setup-nexus.sh
    The official doc calls out **Strict** specifically: *"to ensure proper resolution of
    `.rhlw` suffixes."* A loose layout policy can mis-resolve the vendor suffix.
 
+   Also set:
+
+   | Field | Value | Why |
+   |---|---|---|
+   | **Maximum metadata age** | `60` minutes | How soon a newly published `.rhlw` version can show up |
+   | **Negative cache TTL** | `60` minutes | A version that was missing is retried within an hour |
+   | Maximum component age for release jars | leave it long (hours or more) | A release file does not change once it is copied |
+
    Swap `remediated` for `validated` or `predisclosure` when needed. For multiple tiers,
    create separate proxies and combine them in a Nexus **group**, typically ordered
    Predisclosure → Remediated → Validated.
@@ -48,18 +59,22 @@ Local Podman start: [`DEMO-LOCAL.md`](DEMO-LOCAL.md) and `scripts/setup-nexus.sh
    For the **public demo** path, leave authentication empty if Nexus allows it. If the UI
    requires non-empty fields, use a placeholder and smoke-test a fetch.
 
-`scripts/setup-nexus.sh` creates this proxy over the Nexus REST API (layout policy Strict).
+`scripts/setup-nexus.sh` creates this proxy (layout **Strict**, metadata age 60 minutes)
+and then copies a sample jar through it.
 
 ---
 
 ## Verify
 
-1. Open the new proxy repository in Nexus.
-2. Request a known artifact — e.g. navigate toward `org/springframework/spring-core/` and
-   confirm a `.rhlw-` jar is retrievable.
-3. From a test Maven build that uses the Nexus group/proxy as its remote, resolve a GAV
-   such as `com.jayway.jsonpath:json-path:2.8.0.rhlw-00001` when that version exists in
-   the tier.
+With Nexus running:
+
+```bash
+./scripts/copy-sample.sh nexus
+```
+
+Success is HTTP 200 and a non-empty file under `.local/integrations/` (the script prints
+the path). That file is the local copy. Browse `lightwell-remote` in Nexus and you should
+see `spring-core` after this fetch. The setup script runs this command for you.
 
 ---
 
@@ -72,6 +87,13 @@ packages.redhat.com directly. See Red Hat’s
 Put Lightwell credentials on the proxy and keep CI pointed at Nexus only.
 
 ---
+
+## How it stays in sync
+
+Lightwell publishes a new build. After the metadata age (60 minutes with the settings
+above), a build that asks for that version copies it into Nexus. Nothing rewrites your
+`pom.xml`. You do not recreate `lightwell-remote` to sync, and re-running the setup
+script does not download the catalog.
 
 ## After the jar resolves
 
