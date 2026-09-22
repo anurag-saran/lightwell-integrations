@@ -4,8 +4,8 @@ Proxy the Lightwell Network through the artifact repository managers you already
 and see how SonarQube sits next to a dependency-upgrade grade. These are customer
 wiring docs, not a substitute for Red Hat’s product documentation.
 
-upgrade-delta is a separate project. It grades a bump after the jar resolves. This
-repository does not include it.
+upgrade-delta grades the bump after the jar is resolvable. It is a separate
+internal project. This repository does not include it.
 
 | Guide | When you need it |
 |---|---|
