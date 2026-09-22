@@ -1,6 +1,6 @@
 # Lightwell integrations
 
-After setup, `lightwell-remote` on your Artifactory or Nexus server can fetch a
+After setup, `lightwell-java-remediated` on your Artifactory or Nexus server can fetch a
 Lightwell jar, and that jar is stored on your server.
 
 These guides walk a first-time operator through that connection. They are not a
@@ -9,6 +9,39 @@ Lightwell; it only gates application code quality.
 
 upgrade-delta grades the bump after the jar is resolvable. It is a separate
 internal project. This repository does not include it.
+
+## Start here
+
+From this repository, on a machine with Podman:
+
+```bash
+./scripts/setup-demo.sh
+```
+
+That repeats the public demo: local Artifactory and Nexus, no Lightwell token, and
+the small public catalogs. For a production service account:
+
+```bash
+./scripts/setup-prod.sh
+```
+
+It asks for the Lightwell user (`XXXXXXX|service-account-name`) and token, then
+points those same local servers at the production Java feeds. It does not copy the
+production catalog. SonarQube stays optional: `./scripts/setup-sonarqube.sh`.
+Details are in [`DEMO-LOCAL.md`](DEMO-LOCAL.md).
+
+Point Maven at the local `lightwell-java` repository, not at packages.redhat.com.
+Sample builds:
+
+```bash
+mvn -f samples/demo/pom.xml dependency:resolve
+mvn -f samples/prod/pom.xml dependency:resolve
+```
+
+[`samples/demo/pom.xml`](samples/demo/pom.xml) uses a public-demo library.
+[`samples/prod/pom.xml`](samples/prod/pom.xml) is the same client URL after
+`setup-prod.sh`. Change `lightwell.version` to the production build you adopt.
+The token stays on Artifactory or Nexus.
 
 | Guide | When you need it |
 |---|---|
@@ -66,7 +99,7 @@ again does not sync anything.
 3. A build that asks for that version copies the jar into the cache.
 
 Release jars that are already cached stay cached. They do not change. You do not
-recreate `lightwell-remote` to pick up a new build.
+recreate `lightwell-java-remediated` to pick up a new build.
 
 ## Demo narrative
 

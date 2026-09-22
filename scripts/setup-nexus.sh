@@ -104,7 +104,7 @@ if mode == "prod":
         "password": os.environ["LIGHTWELL_TOKEN"],
     }
 print(json.dumps({
-    "name": "lightwell-remote",
+    "name": "lightwell-java-remediated",
     "online": True,
     "storage": {"blobStoreName": "default", "strictContentTypeValidation": True},
     "proxy": {"remoteUrl": url, "contentMaxAge": 1440, "metadataMaxAge": 60},
@@ -127,10 +127,10 @@ HTTP=$(curl -sS -o "$STATE/nexus-repo.out" -w "%{http_code}" \
 if [[ "$HTTP" == "400" ]] && grep -q 'already exists\|Duplicate' "$STATE/nexus-repo.out" 2>/dev/null; then
   UPDATE=$(curl -sS -o "$STATE/nexus-repo.out" -w "%{http_code}" \
     -u "admin:${ADMIN_PASS}" -X PUT \
-    "http://127.0.0.1:${HOST_PORT}/service/rest/v1/repositories/maven/proxy/lightwell-remote" \
+    "http://127.0.0.1:${HOST_PORT}/service/rest/v1/repositories/maven/proxy/lightwell-java-remediated" \
     -H "Content-Type: application/json" \
     --data-binary @"$STATE/nexus-repo.json" || true)
-  echo "Proxy lightwell-remote already existed; update HTTP $UPDATE"
+  echo "Proxy lightwell-java-remediated already existed; update HTTP $UPDATE"
   if [[ "$UPDATE" != "200" && "$UPDATE" != "204" ]]; then
     echo "Could not update cache ages. The existing proxy is unchanged; continuing to copy a sample jar."
   fi
@@ -146,11 +146,15 @@ fi
 
 export LIGHTWELL_COPY_USER=admin
 export LIGHTWELL_COPY_PASSWORD="$ADMIN_PASS"
-"$(dirname "$0")/copy-sample.sh" nexus
+if [[ "${LIGHTWELL_SKIP_SAMPLE:-}" == "1" ]]; then
+  echo "Skipping the sample jar copy."
+else
+  "$(dirname "$0")/copy-sample.sh" nexus
+fi
 
 echo
 echo "Nexus UI:   http://127.0.0.1:${HOST_PORT}/"
 echo "Login:      admin / ${ADMIN_PASS}"
-echo "Proxy repo: lightwell-remote  (Maven layout policy STRICT, metadata age 60 minutes)"
-echo "Browse:     http://127.0.0.1:${HOST_PORT}/#browse/browse:lightwell-remote"
+echo "Proxy repo: lightwell-java-remediated  (Maven layout policy STRICT, metadata age 60 minutes)"
+echo "Browse:     http://127.0.0.1:${HOST_PORT}/#browse/browse:lightwell-java-remediated"
 echo "Password saved at $PASS_FILE (gitignored)."

@@ -52,21 +52,74 @@ integrations_require_host_port() {
 }
 
 # LIGHTWELL_MODE=demo (default, anonymous public feed) or prod (service account).
-integrations_lightwell_url() {
-  case "${LIGHTWELL_MODE:-demo}" in
+# integrations_lightwell_feed_url ECOSYSTEM TIER
+# ecosystem: java | python
+# tier: predisclosure | remediated | validated
+# The public demo has no predisclosure feed.
+integrations_lightwell_feed_url() {
+  local eco="${1:-java}" tier="${2:-remediated}" mode="${LIGHTWELL_MODE:-demo}"
+  case "$eco" in
+    java|python) ;;
+    *)
+      echo "ecosystem must be java or python (got ${eco})" >&2
+      return 2
+      ;;
+  esac
+  case "$tier" in
+    predisclosure|remediated|validated) ;;
+    *)
+      echo "tier must be predisclosure, remediated, or validated (got ${tier})" >&2
+      return 2
+      ;;
+  esac
+  case "$mode" in
     demo)
-      echo "https://packages.redhat.com/lightwell/public-lightwell-demo/java/remediated/"
+      if [[ "$tier" == "predisclosure" ]]; then
+        echo "The public demo has no ${eco} predisclosure feed." >&2
+        return 2
+      fi
+      echo "https://packages.redhat.com/lightwell/public-lightwell-demo/${eco}/${tier}/"
       ;;
     prod)
       : "${LIGHTWELL_USER:?Set LIGHTWELL_USER to XXXXXXX|service-account-name}"
       : "${LIGHTWELL_TOKEN:?Set LIGHTWELL_TOKEN to the service-account token}"
-      echo "${LIGHTWELL_URL:-https://packages.redhat.com/lightwell/java/remediated/}"
+      echo "https://packages.redhat.com/lightwell/${eco}/${tier}/"
       ;;
     *)
-      echo "LIGHTWELL_MODE must be demo or prod (got ${LIGHTWELL_MODE})" >&2
-      exit 2
+      echo "LIGHTWELL_MODE must be demo or prod (got ${mode})" >&2
+      return 2
       ;;
   esac
+}
+
+# Java remediated URL. LIGHTWELL_URL overrides this in prod only.
+integrations_lightwell_url() {
+  if [[ "${LIGHTWELL_MODE:-demo}" == "prod" && -n "${LIGHTWELL_URL:-}" ]]; then
+    : "${LIGHTWELL_USER:?Set LIGHTWELL_USER to XXXXXXX|service-account-name}"
+    : "${LIGHTWELL_TOKEN:?Set LIGHTWELL_TOKEN to the service-account token}"
+    echo "$LIGHTWELL_URL"
+    return 0
+  fi
+  integrations_lightwell_feed_url java remediated
+}
+
+# Wheel bytes for the Python validated feed. The public demo serves those
+# files from the Pulp content path, not from the simple-index URL.
+integrations_lightwell_python_files_url() {
+  if [[ "${LIGHTWELL_MODE:-demo}" == "demo" ]]; then
+    echo "https://packages.redhat.com/api/pulp-content/public-lightwell-demo/python/validated"
+    return 0
+  fi
+  integrations_lightwell_feed_url python validated
+}
+
+# OSV advisories published next to the public demo remediated feed.
+integrations_lightwell_osv_url() {
+  if [[ "${LIGHTWELL_MODE:-demo}" != "demo" ]]; then
+    echo "OSV copy is for the public demo feed." >&2
+    return 2
+  fi
+  echo "https://packages.redhat.com/api/pulp-content/public-lightwell-demo/osv/java/remediated/"
 }
 
 # Third argument is a '|' list of acceptable HTTP codes. Default is 200.

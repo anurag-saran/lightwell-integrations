@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Public demo. Run ./scripts/setup-demo.sh first.
+  lightwell-java searches remediated, then validated. No Lightwell token.
+
+  Default URL is the local Artifactory virtual repository.
+  Nexus: mvn -f samples/demo/pom.xml dependency:resolve \
+    -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
+
+  Artifactory asks for a login. In settings.xml, server id lightwell-java
+  is admin / Lightwell-demo1. That password is local-only.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.example</groupId>
+  <artifactId>lightwell-demo</artifactId>
+  <version>1.0.0</version>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <lightwell.repo.url>http://127.0.0.1:8082/artifactory/lightwell-java</lightwell.repo.url>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>lightwell-java</id>
+      <name>Local Lightwell Java</name>
+      <url>${lightwell.repo.url}</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <!-- Validated only, so the virtual repository must look past remediated. -->
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.11.0.rhlw-00001</version>
+    </dependency>
+  </dependencies>
+</project>

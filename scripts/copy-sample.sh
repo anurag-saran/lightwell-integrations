@@ -19,11 +19,11 @@ OUT="$STATE/$(basename "$SMOKE")"
 
 USER="${LIGHTWELL_COPY_USER:-admin}"
 if [[ "$TOOL" == "artifactory" ]]; then
-  BASE="http://127.0.0.1:${ARTIFACTORY_UI_PORT:-8082}/artifactory/lightwell-remote"
+  BASE="http://127.0.0.1:${ARTIFACTORY_UI_PORT:-8082}/artifactory/lightwell-java-remediated"
   PASS="${LIGHTWELL_COPY_PASSWORD:-${DEMO_PASSWORD:-Lightwell-demo1}}"
   LABEL="Artifactory"
 else
-  BASE="http://127.0.0.1:${NEXUS_HOST_PORT:-8083}/repository/lightwell-remote"
+  BASE="http://127.0.0.1:${NEXUS_HOST_PORT:-8083}/repository/lightwell-java-remediated"
   if [[ -n "${LIGHTWELL_COPY_PASSWORD:-}" ]]; then
     PASS="$LIGHTWELL_COPY_PASSWORD"
   elif [[ -f "$STATE/nexus-admin.password" ]]; then

@@ -31,10 +31,12 @@ integrations_require_host_port "$UI_PORT" "$NAME"
 integrations_require_host_port "$ROUTER_PORT" "$NAME"
 integrations_ensure_container "$NAME" \
   --restart=unless-stopped \
+  --hostname "$NAME" \
   -p "${UI_PORT}:8082" \
   -p "${ROUTER_PORT}:8081" \
   -v "${NAME}-data:/var/opt/jfrog/artifactory" \
   -e JF_SHARED_DATABASE_ALLOWNONPOSTGRESQL=true \
+  -e JF_JFCONNECT_ENABLED=false \
   -e EXTRA_JAVA_OPTIONS="-Xms512m -Xmx2g" \
   "$IMAGE"
 
@@ -79,7 +81,7 @@ if mode == "prod":
     basic["password"] = os.environ["LIGHTWELL_TOKEN"]
 print(json.dumps({
     "type": "remoteRepoConfig",
-    "general": {"repoKey": "lightwell-remote"},
+    "general": {"repoKey": "lightwell-java-remediated"},
     "basic": basic,
     "advanced": {
         # Lightwell redirects to a presigned S3 URL. S3 rejects HEAD.
@@ -130,7 +132,7 @@ PY
 }
 
 GET=$(curl -sS -o "$STATE/artifactory-ui-get.json" -w "%{http_code}" \
-  -u "$AUTH" "${UI_REPOS}/remote/lightwell-remote" || true)
+  -u "$AUTH" "${UI_REPOS}/remote/lightwell-java-remediated" || true)
 HTTP="$GET"
 if [[ "$GET" != "200" ]]; then
   HTTP=$(curl -sS -o "$STATE/artifactory-repo.out" -w "%{http_code}" \
@@ -139,7 +141,7 @@ if [[ "$GET" != "200" ]]; then
     --data-binary @"$STATE/artifactory-ui.json" || true)
   echo "Create remote HTTP $HTTP"
   GET=$(curl -sS -o "$STATE/artifactory-ui-get.json" -w "%{http_code}" \
-    -u "$AUTH" "${UI_REPOS}/remote/lightwell-remote" || true)
+    -u "$AUTH" "${UI_REPOS}/remote/lightwell-java-remediated" || true)
 fi
 if [[ "$GET" == "200" ]]; then
   artifactory_apply_remote_fields
@@ -157,7 +159,7 @@ echo "Demo password is local-only. Do not reuse it on a shared Artifactory."
 
 artifactory_clicks() {
   echo "  Administration → Repositories → Create a Repository → Remote → Maven"
-  echo "  Repository Key: lightwell-remote"
+  echo "  Repository Key: lightwell-java-remediated"
   echo "  URL:            $LW_URL"
   echo "  Maven Settings: check List Remote Artifacts"
   echo "  Clear Enable Token Authentication"
@@ -171,21 +173,25 @@ export LIGHTWELL_COPY_USER="${AUTH%%:*}"
 export LIGHTWELL_COPY_PASSWORD="${AUTH#*:}"
 
 if [[ "$HTTP" == "200" || "$HTTP" == "201" ]]; then
-  echo "Remote repo:     lightwell-remote"
-  "$(dirname "$0")/copy-sample.sh" artifactory
-  echo "Browse:          http://127.0.0.1:${UI_PORT}/ui/repos/tree/General/lightwell-remote"
+  echo "Remote repo:     lightwell-java-remediated"
+  if [[ "${LIGHTWELL_SKIP_SAMPLE:-}" == "1" ]]; then
+    echo "Skipping the sample jar copy."
+  else
+    "$(dirname "$0")/copy-sample.sh" artifactory
+  fi
+  echo "Browse:          http://127.0.0.1:${UI_PORT}/ui/repos/tree/General/lightwell-java-remediated"
   exit 0
 fi
 
 echo
-echo "The console API did not save lightwell-remote. Create it in the UI, then this script will copy a sample jar:"
+echo "The console API did not save lightwell-java-remediated. Create it in the UI, then this script will copy a sample jar:"
 artifactory_clicks
 echo
-echo "Waiting up to 3 minutes for lightwell-remote to appear..."
+echo "Waiting up to 3 minutes for lightwell-java-remediated to appear..."
 READY=0
 for ((i = 1; i <= 45; i++)); do
   CODE=$(curl -sS -o /dev/null -w "%{http_code}" -u "$AUTH" \
-    "${UI_REPOS}/remote/lightwell-remote" || true)
+    "${UI_REPOS}/remote/lightwell-java-remediated" || true)
   if [[ "$CODE" == "200" ]]; then
     READY=1
     break
@@ -193,11 +199,15 @@ for ((i = 1; i <= 45; i++)); do
   sleep 4
 done
 if [[ "$READY" == "1" ]]; then
-  "$(dirname "$0")/copy-sample.sh" artifactory
-  echo "Browse:          http://127.0.0.1:${UI_PORT}/ui/repos/tree/General/lightwell-remote"
+  if [[ "${LIGHTWELL_SKIP_SAMPLE:-}" == "1" ]]; then
+    echo "Skipping the sample jar copy."
+  else
+    "$(dirname "$0")/copy-sample.sh" artifactory
+  fi
+  echo "Browse:          http://127.0.0.1:${UI_PORT}/ui/repos/tree/General/lightwell-java-remediated"
   exit 0
 fi
-echo "lightwell-remote is still missing. Create it with these clicks, then re-run this script:" >&2
+echo "lightwell-java-remediated is still missing. Create it with these clicks, then re-run this script:" >&2
 artifactory_clicks >&2
 echo "Repository API HTTP $HTTP" >&2
 if [[ -f "$STATE/artifactory-repo.out" ]]; then

@@ -1,6 +1,6 @@
 # Local demo — Artifactory, Nexus, and SonarQube
 
-After Nexus or Artifactory is up, `lightwell-remote` on that server can fetch a
+After Nexus or Artifactory is up, `lightwell-java-remediated` on that server can fetch a
 Lightwell jar, and that jar is stored on your machine. Click paths:
 [`ARTIFACTORY.md`](ARTIFACTORY.md), [`NEXUS.md`](NEXUS.md). SonarQube does not copy
 Lightwell ([`SONARQUBE.md`](SONARQUBE.md)).
@@ -20,40 +20,55 @@ same host ports.
 
 ## Scripts
 
-| Script | What it starts | URL | Lightwell |
-|---|---|---|---|
-| [`scripts/setup-artifactory.sh`](scripts/setup-artifactory.sh) | Artifactory OSS | http://127.0.0.1:8082 | Maven remote `lightwell-remote` |
-| [`scripts/setup-nexus.sh`](scripts/setup-nexus.sh) | Nexus OSS | http://127.0.0.1:8083 | Maven2 proxy, layout **Strict** |
-| [`scripts/setup-sonarqube.sh`](scripts/setup-sonarqube.sh) | SonarQube Community | http://127.0.0.1:9000 | none — app quality gate only |
+The scripts start the Podman machine when it is stopped. On a Mac, run them from this
+repo, not from another project directory.
+
+| Script | What it does |
+|---|---|
+| [`scripts/setup-demo.sh`](scripts/setup-demo.sh) | Public demo. No token. Creates the Java and Python repositories and copies the small catalogs. |
+| [`scripts/setup-prod.sh`](scripts/setup-prod.sh) | Asks for the Lightwell user and token, then points the same local servers at the production Java feeds. Does not copy the catalog. |
+| [`scripts/setup-sonarqube.sh`](scripts/setup-sonarqube.sh) | Optional. SonarQube Community. No Lightwell connection. |
+
+`setup-artifactory.sh` and `setup-nexus.sh` are the lower-level scripts those two
+commands call. You do not need to run them yourself.
 
 Default login after a successful script run: `admin` / `Lightwell-demo1`
 (override with `DEMO_PASSWORD`). Demo-only — do not reuse on a shared server.
 
-First-time order (public demo feed, no token):
-
-The scripts start the Podman machine when it is stopped. On a Mac, run them from this
-repo, not from another project directory:
+Public demo (no token):
 
 ```bash
-chmod +x scripts/setup-*.sh scripts/copy-sample.sh
-./scripts/setup-nexus.sh
+chmod +x scripts/setup-demo.sh scripts/setup-prod.sh
+./scripts/setup-demo.sh
 ```
 
-Nexus creates `lightwell-remote` and copies a sample `spring-core` jar. Success is HTTP
-200 and a non-empty file under `.local/integrations/`. If the copy says the S3 link has
-expired, the proxy is still configured; re-run `./scripts/copy-sample.sh nexus` when
-the feed issues a fresh redirect. Open http://127.0.0.1:8083/ and browse
-`lightwell-remote` to see that cached jar.
+That starts Artifactory on http://127.0.0.1:8082/ui/ and Nexus on
+http://127.0.0.1:8083/, then creates:
+
+- `lightwell-java-remediated`
+- `lightwell-java-validated`
+- `lightwell-java` (virtual/group: remediated, then validated)
+- `lightwell-python-validated`
+
+It copies the small public catalogs. An expired S3 link is reported and does not
+remove the copies that succeeded.
+
+Production Lightwell (service account). The script asks for the user and token.
+It does not print the token.
 
 ```bash
-./scripts/setup-artifactory.sh
+./scripts/setup-prod.sh
 ```
 
-The script creates `lightwell-remote` through the console API, sets **Missed Retrieval
-Cache Period** to `600` seconds, and turns on **Bypass HEAD Requests** so the S3
-redirect can be downloaded ([`ARTIFACTORY.md`](ARTIFACTORY.md)). If that API fails it
-prints the clicks and waits. Open http://127.0.0.1:8082/ui/ and find the sample jar
-under `lightwell-remote`.
+That creates the same local servers and repository names, with production Java URLs
+and the token stored on each remote:
+
+- `https://packages.redhat.com/lightwell/java/predisclosure/`
+- `https://packages.redhat.com/lightwell/java/remediated/`
+- `https://packages.redhat.com/lightwell/java/validated/`
+
+`lightwell-java` searches predisclosure, then remediated, then validated. The
+production catalog is not copied. The first request for a jar stores that jar.
 
 ```bash
 ./scripts/setup-sonarqube.sh
@@ -61,14 +76,29 @@ under `lightwell-remote`.
 
 SonarQube starts for the app-quality gate. It does not connect to Lightwell.
 
-Production Lightwell (service account):
+## Resolve a jar with Maven
+
+Maven uses `lightwell-java` on your local server. It does not call
+packages.redhat.com, and the Lightwell token is not in the `pom.xml`.
+
+| Sample | When | What it resolves |
+|---|---|---|
+| [`samples/demo/pom.xml`](samples/demo/pom.xml) | After `setup-demo.sh` | `commons-io:commons-io:2.11.0.rhlw-00001` (validated, so the virtual looks past remediated) |
+| [`samples/prod/pom.xml`](samples/prod/pom.xml) | After `setup-prod.sh` | `org.yaml:snakeyaml` at `lightwell.version`. Change that property to the production build you adopt. |
+
+Artifactory is the default URL. Nexus is the same command with one property.
+Artifactory requires a login. In `settings.xml`, the server id `lightwell-java`
+is `admin` / `Lightwell-demo1` (local-only). Nexus on this demo allows anonymous
+reads.
 
 ```bash
-export LIGHTWELL_MODE=prod
-export LIGHTWELL_USER='XXXXXXX|service-account-name'
-export LIGHTWELL_TOKEN='...'
-./scripts/setup-artifactory.sh
-./scripts/setup-nexus.sh
+mvn -f samples/demo/pom.xml dependency:resolve
+mvn -f samples/demo/pom.xml dependency:resolve \
+  -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
+
+mvn -f samples/prod/pom.xml dependency:resolve
+mvn -f samples/prod/pom.xml dependency:resolve \
+  -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
 ```
 
 Nexus is published on **8083** so Artifactory can keep host ports **8081** and **8082**.
@@ -79,10 +109,10 @@ demo. A production Artifactory should use PostgreSQL. The script also pre-create
 
 ## Demo beats
 
-1. **Nexus** — the setup script already copied the sample jar. Browse
-   `lightwell-remote` and point at **Layout policy: Strict**.
-2. **Artifactory** — the setup script already created `lightwell-remote`. Show the same
-   jar in the Artifactory cache. Finish the printed clicks only if the script is waiting.
+1. **Nexus** — browse `lightwell-java` and point at **Layout policy: Strict**.
+   The group searches remediated, then validated.
+2. **Artifactory** — show `lightwell-java`. Finish the printed clicks only if a
+   lower-level script is waiting.
 3. **What neither did** — the jar is available. Grading whether your app owes a specific
    test set is upgrade-delta, a separate internal project. A new `.rhlw` build shows up
    after the metadata cache age; nothing edits `pom.xml` for you.

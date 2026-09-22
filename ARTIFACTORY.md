@@ -1,6 +1,6 @@
 # Integrate Lightwell with JFrog Artifactory
 
-After these steps, `lightwell-remote` on your Artifactory server can fetch a Lightwell
+After these steps, `lightwell-java-remediated` on your Artifactory server can fetch a Lightwell
 jar, and that jar is stored on your server.
 
 A **remote** is the connection to Lightwell. The **cache** is the local copy made the
@@ -36,7 +36,7 @@ Local Podman start: [`DEMO-LOCAL.md`](DEMO-LOCAL.md) and `scripts/setup-artifact
 
    | Field | Production | Public demo |
    |---|---|---|
-   | Repository Key | `lightwell-remote` | `lightwell-remote` (or `lightwell-remote-demo`) |
+   | Repository Key | `lightwell-java-remediated` | `lightwell-java-remediated` (or `lightwell-java-remediated-demo`) |
    | URL | `https://packages.redhat.com/lightwell/java/remediated/` | `https://packages.redhat.com/lightwell/public-lightwell-demo/java/remediated/` |
    | User Name | `XXXXXXX\|service-account-name` | leave blank, or a placeholder if the UI requires a value |
    | Password / Access Token | service-account token | leave blank, or the same placeholder |
@@ -68,13 +68,13 @@ the UI uses, including **Bypass HEAD Requests** (the feed redirects to S3, and S
 rejects HEAD) and **Missed Retrieval Cache Period** `600`. This OSS build has no
 Metadata Retrieval Cache Period field; set that to `600` as well when the screen shows
 it. If the console API fails, the script prints the clicks and waits for you to save
-`lightwell-remote`, then copies a sample jar.
+`lightwell-java-remediated`, then copies a sample jar.
 
 ---
 
 ## Verify
 
-With Artifactory running and `lightwell-remote` saved:
+With Artifactory running and `lightwell-java-remediated` saved:
 
 ```bash
 ./scripts/copy-sample.sh artifactory
@@ -82,7 +82,7 @@ With Artifactory running and `lightwell-remote` saved:
 
 Success is HTTP 200 and a non-empty file under `.local/integrations/` (the script prints
 the path). That file is the local copy. The same jar is now in the Artifactory cache.
-Open `lightwell-remote` in the UI and you should see `spring-core` after this fetch.
+Open `lightwell-java-remediated` in the UI and you should see `spring-core` after this fetch.
 
 If the public-demo remote fails with empty credentials, try a non-empty placeholder in
 User Name / Password. The demo path does not validate credentials for anonymous fetches,
@@ -94,20 +94,34 @@ but some Artifactory UIs reject blank auth fields.
 
 Lightwell publishes a new build. After the metadata cache period (10 minutes with the
 settings above), a build that asks for that version copies it into Artifactory. Nothing
-rewrites your `pom.xml`. You do not recreate `lightwell-remote` to sync, and re-running
+rewrites your `pom.xml`. You do not recreate `lightwell-java-remediated` to sync, and re-running
 the setup script does not download the catalog.
 
 ---
 
 ## Point Maven at Artifactory
 
-After the remote caches successfully, configure clients to use **your Artifactory URL**,
-not packages.redhat.com directly. Follow JFrog’s
+Clients use the virtual repository, not packages.redhat.com:
+
+`http://127.0.0.1:8082/artifactory/lightwell-java`
+
+`scripts/setup-demo.sh` builds that virtual from remediated, then validated, and
+copies the small public catalog. `scripts/setup-prod.sh` builds it from
+predisclosure, then remediated, then validated, and stores the service-account
+token on each remote. Sample builds: [`samples/demo/pom.xml`](samples/demo/pom.xml)
+and [`samples/prod/pom.xml`](samples/prod/pom.xml).
+
+```bash
+mvn -f samples/demo/pom.xml dependency:resolve
+mvn -f samples/prod/pom.xml dependency:resolve
+```
+
+In `settings.xml`, server id `lightwell-java` is the Artifactory login
+(`admin` / `Lightwell-demo1` on this local demo). Put the Lightwell token on the
+remote, not in the pom or in CI. Follow JFrog’s
 [Connect your Maven Client to Artifactory](https://jfrog.com/help/r/jfrog-artifactory-documentation/maven-repository)
 and Red Hat’s
 [Configure your Java build tool](https://docs.redhat.com/en/documentation/lightwell_network/current/configure-configure_java_build_tool).
-
-Put Lightwell auth on Artifactory and keep CI `settings.xml` pointed at Artifactory only.
 
 ---
 

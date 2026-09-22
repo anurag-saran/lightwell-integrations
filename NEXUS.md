@@ -1,6 +1,6 @@
 # Integrate Lightwell with Sonatype Nexus
 
-After these steps, `lightwell-remote` on your Nexus server can fetch a Lightwell jar,
+After these steps, `lightwell-java-remediated` on your Nexus server can fetch a Lightwell jar,
 and that jar is stored on your server.
 
 A **proxy** is the connection to Lightwell. The **cache** is the local copy made the
@@ -75,18 +75,33 @@ With Nexus running:
 ```
 
 Success is HTTP 200 and a non-empty file under `.local/integrations/` (the script prints
-the path). That file is the local copy. Browse `lightwell-remote` in Nexus and you should
+the path). That file is the local copy. Browse `lightwell-java-remediated` in Nexus and you should
 see `spring-core` after this fetch. The setup script runs this command for you.
 
 ---
 
 ## Point Maven at Nexus
 
-Configure clients to resolve through **your Nexus URL** (proxy or group), not
-packages.redhat.com directly. See Red Hat’s
-[Configure your Java build tool](https://docs.redhat.com/en/documentation/lightwell_network/current/configure-configure_java_build_tool).
+Clients use the group repository, not packages.redhat.com:
 
-Put Lightwell credentials on the proxy and keep CI pointed at Nexus only.
+`http://127.0.0.1:8083/repository/lightwell-java`
+
+`scripts/setup-demo.sh` builds that group from remediated, then validated.
+`scripts/setup-prod.sh` builds it from predisclosure, then remediated, then
+validated, and stores the service-account token on each proxy. Sample builds:
+[`samples/demo/pom.xml`](samples/demo/pom.xml) and
+[`samples/prod/pom.xml`](samples/prod/pom.xml).
+
+```bash
+mvn -f samples/demo/pom.xml dependency:resolve \
+  -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
+mvn -f samples/prod/pom.xml dependency:resolve \
+  -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
+```
+
+Put Lightwell credentials on the proxy and keep CI pointed at Nexus only. See
+Red Hat’s
+[Configure your Java build tool](https://docs.redhat.com/en/documentation/lightwell_network/current/configure-configure_java_build_tool).
 
 ---
 
@@ -94,7 +109,7 @@ Put Lightwell credentials on the proxy and keep CI pointed at Nexus only.
 
 Lightwell publishes a new build. After the metadata age (60 minutes with the settings
 above), a build that asks for that version copies it into Nexus. Nothing rewrites your
-`pom.xml`. You do not recreate `lightwell-remote` to sync, and re-running the setup
+`pom.xml`. You do not recreate `lightwell-java-remediated` to sync, and re-running the setup
 script does not download the catalog.
 
 ## After the jar resolves
