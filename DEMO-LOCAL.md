@@ -22,7 +22,7 @@ same host ports.
 
 | Script | What it starts | URL | Lightwell |
 |---|---|---|---|
-| [`scripts/setup-artifactory.sh`](scripts/setup-artifactory.sh) | Artifactory OSS | http://127.0.0.1:8082 | Maven remote `lightwell-remote` (UI if the API is Pro-only) |
+| [`scripts/setup-artifactory.sh`](scripts/setup-artifactory.sh) | Artifactory OSS | http://127.0.0.1:8082 | Maven remote `lightwell-remote` |
 | [`scripts/setup-nexus.sh`](scripts/setup-nexus.sh) | Nexus OSS | http://127.0.0.1:8083 | Maven2 proxy, layout **Strict** |
 | [`scripts/setup-sonarqube.sh`](scripts/setup-sonarqube.sh) | SonarQube Community | http://127.0.0.1:9000 | none — app quality gate only |
 
@@ -31,24 +31,29 @@ Default login after a successful script run: `admin` / `Lightwell-demo1`
 
 First-time order (public demo feed, no token):
 
+The scripts start the Podman machine when it is stopped. On a Mac, run them from this
+repo, not from another project directory:
+
 ```bash
 chmod +x scripts/setup-*.sh scripts/copy-sample.sh
 ./scripts/setup-nexus.sh
 ```
 
 Nexus creates `lightwell-remote` and copies a sample `spring-core` jar. Success is HTTP
-200 and a non-empty file under `.local/integrations/`. Open
-http://127.0.0.1:8083/ and browse `lightwell-remote` to see that cached jar.
+200 and a non-empty file under `.local/integrations/`. If the copy says the S3 link has
+expired, the proxy is still configured; re-run `./scripts/copy-sample.sh nexus` when
+the feed issues a fresh redirect. Open http://127.0.0.1:8083/ and browse
+`lightwell-remote` to see that cached jar.
 
 ```bash
 ./scripts/setup-artifactory.sh
 ```
 
-Artifactory OSS cannot create the remote over the API. The script prints the clicks.
-Do them, including **Metadata Retrieval Cache Period** `600` and **Missed Retrieval
-Cache Period** `600` ([`ARTIFACTORY.md`](ARTIFACTORY.md)). The script waits a few
-minutes, then copies the same sample jar through Artifactory. Open
-http://127.0.0.1:8082/ui/ and find that jar under `lightwell-remote`.
+The script creates `lightwell-remote` through the console API, sets **Missed Retrieval
+Cache Period** to `600` seconds, and turns on **Bypass HEAD Requests** so the S3
+redirect can be downloaded ([`ARTIFACTORY.md`](ARTIFACTORY.md)). If that API fails it
+prints the clicks and waits. Open http://127.0.0.1:8082/ui/ and find the sample jar
+under `lightwell-remote`.
 
 ```bash
 ./scripts/setup-sonarqube.sh
@@ -76,8 +81,8 @@ demo. A production Artifactory should use PostgreSQL. The script also pre-create
 
 1. **Nexus** — the setup script already copied the sample jar. Browse
    `lightwell-remote` and point at **Layout policy: Strict**.
-2. **Artifactory** — finish the UI clicks if the script is waiting, then show the same
-   jar in the Artifactory cache.
+2. **Artifactory** — the setup script already created `lightwell-remote`. Show the same
+   jar in the Artifactory cache. Finish the printed clicks only if the script is waiting.
 3. **What neither did** — the jar is available. Grading whether your app owes a specific
    test set is upgrade-delta, a separate internal project. A new `.rhlw` build shows up
    after the metadata cache age; nothing edits `pom.xml` for you.

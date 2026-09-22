@@ -53,15 +53,22 @@ Local Podman start: [`DEMO-LOCAL.md`](DEMO-LOCAL.md) and `scripts/setup-artifact
 
    | Field | Value | Why |
    |---|---|---|
-   | **Metadata Retrieval Cache Period** | `600` seconds | How soon a newly published `.rhlw` version can show up in `maven-metadata.xml` |
+   | **Metadata Retrieval Cache Period** | `600` seconds, when the field is shown | How soon a newly published `.rhlw` version can show up in `maven-metadata.xml` |
    | **Missed Retrieval Cache Period** | `600` seconds | A version that was missing is retried within 10 minutes |
+   | **Bypass HEAD Requests** | checked | The feed redirects to S3, and S3 rejects HEAD |
    | Retrieval cache for release jars | leave the default (hours) | A release file does not change once it is copied |
 
-   Leave every other field at its default.
+   Leave every other field at its default. Artifactory OSS 7.161 does not show
+   Metadata Retrieval Cache Period; the setup script still sets the missed-retrieval
+   timer and Bypass HEAD Requests.
 
-Artifactory OSS blocks creating this remote over REST (that API is Pro-only). Use the
-clicks above. `scripts/setup-artifactory.sh` starts the server, prints the clicks, waits
-a few minutes for you to save `lightwell-remote`, then copies a sample jar.
+Artifactory OSS blocks creating this remote over the public repository REST API (that
+API is Pro-only). `scripts/setup-artifactory.sh` saves it through the same console API
+the UI uses, including **Bypass HEAD Requests** (the feed redirects to S3, and S3
+rejects HEAD) and **Missed Retrieval Cache Period** `600`. This OSS build has no
+Metadata Retrieval Cache Period field; set that to `600` as well when the screen shows
+it. If the console API fails, the script prints the clicks and waits for you to save
+`lightwell-remote`, then copies a sample jar.
 
 ---
 
@@ -121,4 +128,6 @@ a separate project.
 | Empty catalog in UI | **List Remote Artifacts** checked; fetch once so the remote caches |
 | CI still hits packages.redhat.com | Client `settings.xml` / `pom` still lists the Lightwell URL instead of Artifactory |
 | Demo auth fields won’t save blank | Use any placeholder string for public-demo; smoke-test a jar fetch before presenting |
-| Script says the create API is Pro-only | Expected on Artifactory OSS — finish the remote in the UI |
+| Jar fetch is Forbidden after a redirect | **Bypass HEAD Requests** must be checked. S3 presigned URLs reject HEAD |
+| Copy says the S3 link has expired | Lightwell returned a cached redirect. The remote is already saved; re-run `scripts/copy-sample.sh` later |
+| Script waits and prints clicks | The console API did not save the remote. Finish it in the UI, then re-run the script |

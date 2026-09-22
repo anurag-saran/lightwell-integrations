@@ -59,8 +59,10 @@ Local Podman start: [`DEMO-LOCAL.md`](DEMO-LOCAL.md) and `scripts/setup-nexus.sh
    For the **public demo** path, leave authentication empty if Nexus allows it. If the UI
    requires non-empty fields, use a placeholder and smoke-test a fetch.
 
-`scripts/setup-nexus.sh` creates this proxy (layout **Strict**, metadata age 60 minutes)
-and then copies a sample jar through it.
+`scripts/setup-nexus.sh` creates this proxy (layout **Strict**, metadata age 60 minutes,
+negative cache 60 minutes, auto-block off) and then copies a sample jar through it.
+Auto-block stays off so one stale Lightwell redirect does not take the proxy offline.
+The script starts the Podman machine when it is stopped.
 
 ---
 
@@ -111,3 +113,5 @@ or select the owed tests. That grade is upgrade-delta, a separate project.
 | Artifact not cached | Hit the proxy once from Maven; confirm Remote Storage URL ends with the correct tier |
 | CI still hits packages.redhat.com | Client still lists the Lightwell URL instead of the Nexus proxy/group |
 | Demo auth required by UI | Placeholder credentials + smoke-test before presenting |
+| Copy says the S3 link has expired | Lightwell returned a cached redirect. The proxy stays online; re-run `scripts/copy-sample.sh nexus` later |
+| Proxy is offline after one failed fetch | Re-run `scripts/setup-nexus.sh`. It clears a block and leaves auto-block off |

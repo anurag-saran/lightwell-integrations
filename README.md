@@ -59,9 +59,10 @@ The setup does not download the whole Lightwell catalog, and running the setup s
 again does not sync anything.
 
 1. Lightwell publishes a new `.rhlw` build.
-2. Your server re-reads `maven-metadata.xml` after the metadata cache age (10 minutes
-   in these guides: Artifactory **Metadata Retrieval Cache Period** `600` seconds, Nexus
-   **Maximum metadata age** 60 minutes).
+2. Your server re-reads `maven-metadata.xml` after the metadata cache age. On
+   Artifactory set **Missed Retrieval Cache Period** to `600` seconds, and **Metadata
+   Retrieval Cache Period** to `600` seconds when that field is on the screen. On Nexus
+   set **Maximum metadata age** to 60 minutes.
 3. A build that asks for that version copies the jar into the cache.
 
 Release jars that are already cached stay cached. They do not change. You do not

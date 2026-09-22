@@ -19,6 +19,7 @@ chmod 700 "$STATE"
 echo "== Nexus OSS ($IMAGE) =="
 echo "Lightwell proxy: $LW_URL  (mode=${LIGHTWELL_MODE:-demo})"
 
+integrations_require_host_port "$HOST_PORT" "$NAME"
 integrations_ensure_container "$NAME" \
   --restart=unless-stopped \
   -p "${HOST_PORT}:8081" \
@@ -27,34 +28,67 @@ integrations_ensure_container "$NAME" \
   "$IMAGE"
 
 echo "Waiting for Nexus..."
-integrations_wait_http "http://127.0.0.1:${HOST_PORT}/service/rest/v1/status" 150
+# 401 means Nexus is up and anonymous access is off.
+integrations_wait_http "http://127.0.0.1:${HOST_PORT}/service/rest/v1/status" 150 '200|401'
 
 PASS_FILE="$STATE/nexus-admin.password"
+nexus_auth_code() {
+  curl -sS -o /dev/null -w '%{http_code}' --max-time 8 \
+    -u "admin:$1" "http://127.0.0.1:${HOST_PORT}/service/rest/v1/status" || true
+}
+
+ADMIN_PASS=""
 if [[ -f "$PASS_FILE" ]]; then
-  ADMIN_PASS="$(cat "$PASS_FILE")"
-elif curl -fsS -o /dev/null -u "admin:${DEMO_PASSWORD}" "http://127.0.0.1:${HOST_PORT}/service/rest/v1/status"; then
+  CANDIDATE="$(cat "$PASS_FILE")"
+  CODE="$(nexus_auth_code "$CANDIDATE")"
+  if [[ "$CODE" == "200" ]]; then
+    ADMIN_PASS="$CANDIDATE"
+  elif [[ "$CODE" == "429" ]]; then
+    echo "Nexus is rate-limiting admin login. Waiting 30 seconds..."
+    sleep 30
+    CODE="$(nexus_auth_code "$CANDIDATE")"
+    if [[ "$CODE" == "200" ]]; then
+      ADMIN_PASS="$CANDIDATE"
+    fi
+  fi
+fi
+if [[ -z "$ADMIN_PASS" ]] && [[ "$(nexus_auth_code "$DEMO_PASSWORD")" == "200" ]]; then
   ADMIN_PASS="$DEMO_PASSWORD"
-  printf '%s' "$ADMIN_PASS" >"$PASS_FILE"
-  chmod 600 "$PASS_FILE"
-else
+fi
+if [[ -z "$ADMIN_PASS" ]]; then
+  if ! podman exec "$NAME" test -f /nexus-data/admin.password; then
+    echo "Could not log in to Nexus as admin, and the one-time password file is gone." >&2
+    echo "Wait for the login lockout to clear, then re-run. Expected password: ${DEMO_PASSWORD}" >&2
+    exit 1
+  fi
   echo "Reading one-time admin password from the container..."
-  ADMIN_PASS="$(podman exec "$NAME" cat /nexus-data/admin.password)"
-  printf '%s' "$ADMIN_PASS" >"$PASS_FILE"
-  chmod 600 "$PASS_FILE"
-  curl -fsS -u "admin:${ADMIN_PASS}" -X PUT \
+  ONCE="$(podman exec "$NAME" cat /nexus-data/admin.password)"
+  CODE="$(nexus_auth_code "$ONCE")"
+  if [[ "$CODE" == "429" ]]; then
+    echo "Nexus is rate-limiting admin login. Waiting 30 seconds..."
+    sleep 30
+    CODE="$(nexus_auth_code "$ONCE")"
+  fi
+  if [[ "$CODE" != "200" ]]; then
+    echo "Nexus admin login returned HTTP ${CODE}." >&2
+    exit 1
+  fi
+  curl -fsS -u "admin:${ONCE}" -X PUT \
     -H "Content-Type: text/plain" \
     --data "$DEMO_PASSWORD" \
     "http://127.0.0.1:${HOST_PORT}/service/rest/v1/security/users/admin/change-password"
   ADMIN_PASS="$DEMO_PASSWORD"
-  printf '%s' "$ADMIN_PASS" >"$PASS_FILE"
 fi
+printf '%s' "$ADMIN_PASS" >"$PASS_FILE"
+chmod 600 "$PASS_FILE"
 
 python3 - "$LW_URL" "${LIGHTWELL_MODE:-demo}" <<'PY' >"$STATE/nexus-repo.json"
 import json, os, sys
 url, mode = sys.argv[1], sys.argv[2]
 http_client = {
     "blocked": False,
-    "autoBlock": True,
+    # A single stale Lightwell redirect must not take the proxy offline.
+    "autoBlock": False,
     "connection": {
         "retries": 0,
         "userAgentSuffix": "lightwell-integrations",

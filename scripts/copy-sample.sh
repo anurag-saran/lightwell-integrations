@@ -44,7 +44,14 @@ fi
 if [[ "$HTTP" != "200" || "$SIZE" -lt 1 ]]; then
   echo "Copy failed: HTTP ${HTTP:-none}, bytes $SIZE" >&2
   echo "URL: $URL" >&2
-  rm -f "$OUT"
+  DIRECT="$STATE/lightwell-direct.body"
+  curl -sS -L --max-time 30 -o "$DIRECT" \
+    "$(integrations_lightwell_url)${SMOKE}" >/dev/null || true
+  if grep -q 'Request has expired' "$DIRECT" "$OUT" 2>/dev/null; then
+    echo "Lightwell answered with a redirect to an S3 link that is already expired." >&2
+    echo "The repository is configured. Re-run this copy when the feed issues a fresh redirect." >&2
+  fi
+  rm -f "$OUT" "$DIRECT"
   exit 1
 fi
 

@@ -13,9 +13,42 @@ integrations_state_dir() {
 
 integrations_require_podman() {
   if ! command -v podman >/dev/null 2>&1; then
-    echo "podman is required. On RHEL: sudo dnf install -y podman" >&2
+    echo "podman is required. On a Mac, install Podman. On RHEL: sudo dnf install -y podman" >&2
     exit 1
   fi
+  if podman info >/dev/null 2>&1; then
+    return 0
+  fi
+  if ! podman machine list >/dev/null 2>&1; then
+    echo "Podman is installed but cannot reach a machine. On a Mac run: podman machine start" >&2
+    exit 1
+  fi
+  echo "Starting the Podman machine..."
+  podman machine start
+  local i
+  for ((i = 1; i <= 30; i++)); do
+    if podman info >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 2
+  done
+  echo "Podman machine did not become reachable. On a Mac run: podman machine start" >&2
+  exit 1
+}
+
+# Fail when some other container already publishes this host port.
+integrations_require_host_port() {
+  local port="$1" owner="$2" line name
+  while IFS= read -r line; do
+    [[ -n "$line" ]] || continue
+    name="${line%% *}"
+    [[ "$name" == "$owner" ]] && continue
+    if [[ "$line" == *":${port}->"* ]]; then
+      echo "Host port ${port} is used by container ${name}. Stop it, then re-run:" >&2
+      echo "  podman stop ${name}" >&2
+      exit 1
+    fi
+  done < <(podman ps --format '{{.Names}} {{.Ports}}')
 }
 
 # LIGHTWELL_MODE=demo (default, anonymous public feed) or prod (service account).
@@ -36,15 +69,18 @@ integrations_lightwell_url() {
   esac
 }
 
+# Third argument is a '|' list of acceptable HTTP codes. Default is 200.
+# Nexus answers 401 on /status when anonymous access is off; that still means it is up.
 integrations_wait_http() {
-  local url="$1" tries="${2:-90}" i
+  local url="$1" tries="${2:-90}" accept="${3:-200}" i code=""
   for ((i = 1; i <= tries; i++)); do
-    if curl -sf -o /dev/null --max-time 5 "$url"; then
+    code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 5 "$url" || true)
+    if [[ "$code" =~ ^(${accept})$ ]]; then
       return 0
     fi
     sleep 4
   done
-  echo "Timed out waiting for $url" >&2
+  echo "Timed out waiting for $url (last HTTP ${code:-none})" >&2
   return 1
 }
 
