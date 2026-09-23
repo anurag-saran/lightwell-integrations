@@ -1,0 +1,132 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lightwell-artifactory
+  namespace: lightwell-demo
+  labels:
+    app: artifactory
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: artifactory
+  namespace: lightwell-demo
+  labels:
+    app: artifactory
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: artifactory
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: artifactory
+    spec:
+      serviceAccountName: lightwell-artifactory
+      securityContext:
+        fsGroup: 1030
+      initContainers:
+        - name: fix-permissions
+          image: releases-docker.jfrog.io/jfrog/artifactory-oss:latest
+          command:
+            - /bin/bash
+            - -ec
+            - |
+              mkdir -p /var/opt/jfrog/artifactory/etc/security
+              chown -R 1030:1030 /var/opt/jfrog/artifactory
+              if [ ! -s /var/opt/jfrog/artifactory/etc/security/master.key ]; then
+                openssl rand -hex 32 > /var/opt/jfrog/artifactory/etc/security/master.key
+                chown 1030:1030 /var/opt/jfrog/artifactory/etc/security/master.key
+                chmod 600 /var/opt/jfrog/artifactory/etc/security/master.key
+              fi
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: data
+              mountPath: /var/opt/jfrog/artifactory
+      containers:
+        - name: artifactory
+          image: releases-docker.jfrog.io/jfrog/artifactory-oss:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8082
+            - name: router
+              containerPort: 8081
+          env:
+            - name: JF_SHARED_DATABASE_ALLOWNONPOSTGRESQL
+              value: "true"
+            - name: JF_JFCONNECT_ENABLED
+              value: "false"
+            - name: EXTRA_JAVA_OPTIONS
+              value: "-Xms512m -Xmx2g"
+          securityContext:
+            runAsUser: 1030
+            runAsGroup: 1030
+            allowPrivilegeEscalation: false
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 2Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          readinessProbe:
+            httpGet:
+              path: /artifactory/api/system/ping
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /artifactory/api/system/ping
+              port: http
+            initialDelaySeconds: 180
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          volumeMounts:
+            - name: data
+              mountPath: /var/opt/jfrog/artifactory
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: artifactory-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: artifactory
+  namespace: lightwell-demo
+  labels:
+    app: artifactory
+spec:
+  selector:
+    app: artifactory
+  ports:
+    - name: http
+      port: 8082
+      targetPort: http
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: artifactory
+  namespace: lightwell-demo
+  labels:
+    app: artifactory
+spec:
+  to:
+    kind: Service
+    name: artifactory
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

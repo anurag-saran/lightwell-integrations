@@ -55,6 +55,7 @@ Step-by-step, including what each repository name means: [`DEMO-LOCAL.md`](DEMO-
 | Guide | When you need it |
 |---|---|
 | [`DEMO-LOCAL.md`](DEMO-LOCAL.md) | You are running Artifactory and Nexus on this machine |
+| [`OPENSHIFT.md`](OPENSHIFT.md) | You are running Artifactory and Nexus on OpenShift (public demo) |
 | [`ARTIFACTORY.md`](ARTIFACTORY.md) | You already have an Artifactory server and want the click path |
 | [`NEXUS.md`](NEXUS.md) | You already have a Nexus server and want the click path |
 | [`SONARQUBE.md`](SONARQUBE.md) | You already use Sonar. Skip this if you do not. |

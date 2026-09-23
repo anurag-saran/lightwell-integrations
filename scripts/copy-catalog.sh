@@ -18,6 +18,7 @@ set -euo pipefail
 
 # shellcheck source=lib-common.sh
 source "$(dirname "$0")/lib-common.sh"
+integrations_enable_insecure_curl_if_requested
 
 TARGET="${1:-both}"
 TIER="${2:-all}"
@@ -136,10 +137,10 @@ PY
 copy_through() {
   local tool="$1" rel="$2" base pass out http size direct
   if [[ "$tool" == "artifactory" ]]; then
-    base="http://127.0.0.1:${ARTIFACTORY_UI_PORT:-8082}/artifactory/${REPO_KEY}"
+    base="$(integrations_artifactory_base)/artifactory/${REPO_KEY}"
     pass="$(artifactory_pass)"
   else
-    base="http://127.0.0.1:${NEXUS_HOST_PORT:-8083}/repository/${REPO_KEY}"
+    base="$(integrations_nexus_base)/repository/${REPO_KEY}"
     pass="$(nexus_pass)"
   fi
   out="$STATE/catalog-body"
@@ -173,10 +174,10 @@ copy_through() {
 wait_for_server() {
   local tool="$1" url accept
   if [[ "$tool" == "artifactory" ]]; then
-    url="http://127.0.0.1:${ARTIFACTORY_UI_PORT:-8082}/artifactory/api/system/ping"
+    url="$(integrations_artifactory_base)/artifactory/api/system/ping"
     accept="200|401"
   else
-    url="http://127.0.0.1:${NEXUS_HOST_PORT:-8083}/service/rest/v1/status"
+    url="$(integrations_nexus_base)/service/rest/v1/status"
     accept="200|401"
   fi
   echo "Waiting for $tool..."
@@ -186,7 +187,7 @@ wait_for_server() {
 ensure_artifactory_remote() {
   local key="$1" url="$2" pass ui get http
   pass="$(artifactory_pass)"
-  ui="http://127.0.0.1:${ARTIFACTORY_UI_PORT:-8082}/artifactory/ui/admin/repositories"
+  ui="$(integrations_artifactory_base)/artifactory/ui/admin/repositories"
   get=$(curl -sS -o "$STATE/artifactory-tier-get.json" -w '%{http_code}' --max-time 30 \
     -u "${USER_NAME}:${pass}" "${ui}/remote/${key}" || true)
   if [[ "$get" != "200" ]]; then
@@ -280,7 +281,7 @@ PY
 ensure_nexus_proxy() {
   local key="$1" url="$2" pass api code
   pass="$(nexus_pass)"
-  api="http://127.0.0.1:${NEXUS_HOST_PORT:-8083}/service/rest/v1/repositories/maven/proxy"
+  api="$(integrations_nexus_base)/service/rest/v1/repositories/maven/proxy"
   python3 - "$key" "$url" <<'PY' >"$STATE/nexus-tier.json"
 import json, os, sys
 key, url = sys.argv[1], sys.argv[2]
@@ -383,22 +384,24 @@ copy_tier() {
   fi
 }
 
-integrations_require_podman
-if [[ "$TARGET" == "artifactory" || "$TARGET" == "both" ]]; then
-  podman start lightwell-artifactory >/dev/null 2>&1 || true
-fi
-if [[ "$TARGET" == "nexus" || "$TARGET" == "both" ]]; then
-  if podman container exists lightwell-nexus-run; then
-    podman start lightwell-nexus-run >/dev/null 2>&1 || true
-  else
-    podman start "${NEXUS_CONTAINER:-lightwell-nexus}" >/dev/null 2>&1 || true
+if ! integrations_using_remote_managers; then
+  integrations_require_podman
+  if [[ "$TARGET" == "artifactory" || "$TARGET" == "both" ]]; then
+    podman start lightwell-artifactory >/dev/null 2>&1 || true
+  fi
+  if [[ "$TARGET" == "nexus" || "$TARGET" == "both" ]]; then
+    if podman container exists lightwell-nexus-run; then
+      podman start lightwell-nexus-run >/dev/null 2>&1 || true
+    else
+      podman start "${NEXUS_CONTAINER:-lightwell-nexus}" >/dev/null 2>&1 || true
+    fi
   fi
 fi
 
 ensure_artifactory_virtual() {
   local pass ui get http
   pass="$(artifactory_pass)"
-  ui="http://127.0.0.1:${ARTIFACTORY_UI_PORT:-8082}/artifactory/ui/admin/repositories"
+  ui="$(integrations_artifactory_base)/artifactory/ui/admin/repositories"
   python3 - <<'PY' >"$STATE/artifactory-virtual.json"
 import json, os
 members = [m for m in os.environ["LIGHTWELL_JAVA_MEMBERS"].split(",") if m]
@@ -448,7 +451,7 @@ PY
 ensure_nexus_group() {
   local pass api code
   pass="$(nexus_pass)"
-  api="http://127.0.0.1:${NEXUS_HOST_PORT:-8083}/service/rest/v1/repositories/maven/group"
+  api="$(integrations_nexus_base)/service/rest/v1/repositories/maven/group"
   python3 - <<'PY' >"$STATE/nexus-group.json"
 import json, os
 members = [m for m in os.environ["LIGHTWELL_JAVA_MEMBERS"].split(",") if m]

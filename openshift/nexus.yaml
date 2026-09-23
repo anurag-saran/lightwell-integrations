@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lightwell-nexus
+  namespace: lightwell-demo
+  labels:
+    app: nexus
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexus
+  namespace: lightwell-demo
+  labels:
+    app: nexus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nexus
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nexus
+    spec:
+      serviceAccountName: lightwell-nexus
+      securityContext:
+        fsGroup: 200
+      containers:
+        - name: nexus
+          image: docker.io/sonatype/nexus3:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8081
+          env:
+            - name: INSTALL4J_ADD_VM_PARAMS
+              value: "-Xms512m -Xmx1g -XX:MaxDirectMemorySize=512m"
+          securityContext:
+            runAsUser: 200
+            runAsGroup: 200
+            allowPrivilegeEscalation: false
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 2Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 36
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 180
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          volumeMounts:
+            - name: data
+              mountPath: /nexus-data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: nexus-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexus
+  namespace: lightwell-demo
+  labels:
+    app: nexus
+spec:
+  selector:
+    app: nexus
+  ports:
+    - name: http
+      port: 8081
+      targetPort: http
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: nexus
+  namespace: lightwell-demo
+  labels:
+    app: nexus
+spec:
+  to:
+    kind: Service
+    name: nexus
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

@@ -5,6 +5,7 @@ set -euo pipefail
 
 # shellcheck source=lib-common.sh
 source "$(dirname "$0")/lib-common.sh"
+integrations_enable_insecure_curl_if_requested
 
 TOOL="${1:-}"
 if [[ "$TOOL" != "artifactory" && "$TOOL" != "nexus" ]]; then
@@ -19,11 +20,11 @@ OUT="$STATE/$(basename "$SMOKE")"
 
 USER="${LIGHTWELL_COPY_USER:-admin}"
 if [[ "$TOOL" == "artifactory" ]]; then
-  BASE="http://127.0.0.1:${ARTIFACTORY_UI_PORT:-8082}/artifactory/lightwell-java-remediated"
+  BASE="$(integrations_artifactory_base)/artifactory/lightwell-java-remediated"
   PASS="${LIGHTWELL_COPY_PASSWORD:-${DEMO_PASSWORD:-Lightwell-demo1}}"
   LABEL="Artifactory"
 else
-  BASE="http://127.0.0.1:${NEXUS_HOST_PORT:-8083}/repository/lightwell-java-remediated"
+  BASE="$(integrations_nexus_base)/repository/lightwell-java-remediated"
   if [[ -n "${LIGHTWELL_COPY_PASSWORD:-}" ]]; then
     PASS="$LIGHTWELL_COPY_PASSWORD"
   elif [[ -f "$STATE/nexus-admin.password" ]]; then

@@ -1,0 +1,6 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lightwell-demo
+  labels:
+    app.kubernetes.io/part-of: lightwell-integrations

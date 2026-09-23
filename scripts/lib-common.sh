@@ -122,12 +122,46 @@ integrations_lightwell_osv_url() {
   echo "https://packages.redhat.com/api/pulp-content/public-lightwell-demo/osv/java/remediated/"
 }
 
+# Base URLs for the local repo managers. Override for OpenShift Routes:
+#   LIGHTWELL_ARTIFACTORY_URL=https://artifactory-lightwell-demo.apps.example.com
+#   LIGHTWELL_NEXUS_URL=https://nexus-lightwell-demo.apps.example.com
+integrations_artifactory_base() {
+  local base="${LIGHTWELL_ARTIFACTORY_URL:-http://127.0.0.1:${ARTIFACTORY_UI_PORT:-8082}}"
+  echo "${base%/}"
+}
+
+integrations_nexus_base() {
+  local base="${LIGHTWELL_NEXUS_URL:-http://127.0.0.1:${NEXUS_HOST_PORT:-8083}}"
+  echo "${base%/}"
+}
+
+# True when callers point at a remote Artifactory/Nexus (OpenShift Routes).
+integrations_using_remote_managers() {
+  [[ -n "${LIGHTWELL_ARTIFACTORY_URL:-}" || -n "${LIGHTWELL_NEXUS_URL:-}" ]]
+}
+
+# curl wrapper. Set LIGHTWELL_CURL_INSECURE=1 for OpenShift router certs.
+integrations_curl() {
+  if [[ "${LIGHTWELL_CURL_INSECURE:-}" == "1" ]]; then
+    command curl -k "$@"
+  else
+    command curl "$@"
+  fi
+}
+
+# Call from scripts after sourcing this file so local curl uses -k when needed.
+integrations_enable_insecure_curl_if_requested() {
+  if [[ "${LIGHTWELL_CURL_INSECURE:-}" == "1" ]]; then
+    curl() { command curl -k "$@"; }
+  fi
+}
+
 # Third argument is a '|' list of acceptable HTTP codes. Default is 200.
 # Nexus answers 401 on /status when anonymous access is off; that still means it is up.
 integrations_wait_http() {
   local url="$1" tries="${2:-90}" accept="${3:-200}" i code=""
   for ((i = 1; i <= tries; i++)); do
-    code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 5 "$url" || true)
+    code=$(integrations_curl -sS -o /dev/null -w '%{http_code}' --max-time 5 "$url" || true)
     if [[ "$code" =~ ^(${accept})$ ]]; then
       return 0
     fi

@@ -10,6 +10,7 @@ set -euo pipefail
 
 # shellcheck source=lib-common.sh
 source "$(dirname "$0")/lib-common.sh"
+integrations_enable_insecure_curl_if_requested
 
 TARGET="${1:-both}"
 case "$TARGET" in
@@ -77,7 +78,7 @@ PY
 ensure_artifactory() {
   local pass ui get http
   pass="$(artifactory_pass)"
-  ui="http://127.0.0.1:${ARTIFACTORY_UI_PORT:-8082}/artifactory/ui/admin/repositories"
+  ui="$(integrations_artifactory_base)/artifactory/ui/admin/repositories"
   get=$(curl -sS -o "$STATE/pypi-get.json" -w '%{http_code}' --max-time 30 \
     -u "${USER_NAME}:${pass}" "${ui}/remote/${KEY}" || true)
   if [[ "$get" != "200" ]]; then
@@ -156,7 +157,7 @@ PY
 ensure_nexus() {
   local pass api code
   pass="$(nexus_pass)"
-  api="http://127.0.0.1:${NEXUS_HOST_PORT:-8083}/service/rest/v1/repositories/pypi/proxy"
+  api="$(integrations_nexus_base)/service/rest/v1/repositories/pypi/proxy"
   python3 - "$KEY" "$FEED" <<'PY' >"$STATE/pypi-nexus.json"
 import json, sys
 key, url = sys.argv[1], sys.argv[2]
@@ -208,10 +209,10 @@ copy_wheel() {
   out="$STATE/pypi-body"
   if [[ "$tool" == "artifactory" ]]; then
     pass="$(artifactory_pass)"
-    wheel_url="http://127.0.0.1:${ARTIFACTORY_UI_PORT:-8082}/artifactory/${KEY}/${filename}"
+    wheel_url="$(integrations_artifactory_base)/artifactory/${KEY}/${filename}"
   else
     pass="$(nexus_pass)"
-    base="http://127.0.0.1:${NEXUS_HOST_PORT:-8083}/repository/${KEY}"
+    base="$(integrations_nexus_base)/repository/${KEY}"
     curl -sS -u "${USER_NAME}:${pass}" --max-time 60 \
       "${base}/simple/${project}/" -o "$STATE/pypi-simple.html" || true
     wheel_url=$(python3 - "$base" "$project" "$filename" "$STATE/pypi-simple.html" <<'PY'
@@ -256,19 +257,25 @@ list_wheels >"$STATE/python-validated-wheels.txt"
 echo "Wheels: $(grep -c . "$STATE/python-validated-wheels.txt" || true)"
 cut -f1 "$STATE/python-validated-wheels.txt" | sed 's/^/  /'
 
-integrations_require_podman
+if ! integrations_using_remote_managers; then
+  integrations_require_podman
+  if [[ "$TARGET" == "artifactory" || "$TARGET" == "both" ]]; then
+    podman start lightwell-artifactory >/dev/null 2>&1 || true
+  fi
+  if [[ "$TARGET" == "nexus" || "$TARGET" == "both" ]]; then
+    if podman container exists lightwell-nexus-run; then
+      podman start lightwell-nexus-run >/dev/null 2>&1 || true
+    else
+      podman start "${NEXUS_CONTAINER:-lightwell-nexus}" >/dev/null 2>&1 || true
+    fi
+  fi
+fi
 if [[ "$TARGET" == "artifactory" || "$TARGET" == "both" ]]; then
-  podman start lightwell-artifactory >/dev/null 2>&1 || true
-  integrations_wait_http "http://127.0.0.1:${ARTIFACTORY_UI_PORT:-8082}/artifactory/api/system/ping" 30 "200|401"
+  integrations_wait_http "$(integrations_artifactory_base)/artifactory/api/system/ping" 30 "200|401"
   ensure_artifactory
 fi
 if [[ "$TARGET" == "nexus" || "$TARGET" == "both" ]]; then
-  if podman container exists lightwell-nexus-run; then
-    podman start lightwell-nexus-run >/dev/null 2>&1 || true
-  else
-    podman start "${NEXUS_CONTAINER:-lightwell-nexus}" >/dev/null 2>&1 || true
-  fi
-  integrations_wait_http "http://127.0.0.1:${NEXUS_HOST_PORT:-8083}/service/rest/v1/status" 30 "200|401"
+  integrations_wait_http "$(integrations_nexus_base)/service/rest/v1/status" 30 "200|401"
   ensure_nexus
 fi
 
@@ -286,8 +293,8 @@ done <"$STATE/python-validated-wheels.txt"
 echo
 if [[ "$FAILED" -eq 0 ]]; then
   echo "Python Validated copy finished."
-  echo "Artifactory: http://127.0.0.1:${ARTIFACTORY_UI_PORT:-8082}/ui/  repository ${KEY}"
-  echo "Nexus:       http://127.0.0.1:${NEXUS_HOST_PORT:-8083}/#browse/browse:${KEY}"
+  echo "Artifactory: $(integrations_artifactory_base)/ui/  repository ${KEY}"
+  echo "Nexus:       $(integrations_nexus_base)/#browse/browse:${KEY}"
 else
   echo "Python Validated copy finished with $FAILED failure(s)."
   exit 1
