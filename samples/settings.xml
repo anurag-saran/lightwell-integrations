@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Local demo login for Artifactory and Nexus. This is not the Lightwell token.
-  Password is local-only. Do not reuse it on a shared server.
+  Demo login for Artifactory and Nexus (local Podman or OpenShift Routes).
+  This is the repository server login, not the Lightwell token.
+  Password is demo-only. Do not reuse it on a shared server.
 
-  mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve
+  The <server><id> must match the <repository><id> in the pom (lightwell-java).
+  Copy this <servers> block into ~/.m2/settings.xml for day-to-day use, or pass -s.
+
+  Local:
+    mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve
+
+  OpenShift Artifactory:
+    mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
+      -Dlightwell.repo.url=https://artifactory-lightwell-demo.apps.asaran.na-launch.com/artifactory/lightwell-java
 -->
 <settings>
   <servers>

@@ -49,6 +49,13 @@ mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve
 `BUILD SUCCESS` means Artifactory downloaded `commons-io` version `2.11.0.rhlw-00001`.
 That library is only on the validated feed, so the search had to look past remediated.
 
+### Beyond `pom.xml` (developer laptop)
+
+| Change | File | Why |
+|---|---|---|
+| `.rhlw` dependency + `lightwell-java` repository URL | Project [`samples/demo/pom.xml`](samples/demo/pom.xml) | Maven asks your Artifactory/Nexus for that version |
+| Server username/password with `<id>lightwell-java</id>` | [`samples/settings.xml`](samples/settings.xml) or `~/.m2/settings.xml` | Artifactory/Nexus login. **Not** the Lightwell token |
+
 [`samples/settings.xml`](samples/settings.xml) is the Artifactory login (`admin` /
 `Lightwell-demo1`). It is not a Lightwell token.
 
@@ -63,6 +70,8 @@ mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
 That version is on the public demo, so this command works after the demo setup too.
 After the production setup below, change `lightwell.version` in that file to the
 build you are adopting.
+
+OpenShift Routes and TLS notes: [`OPENSHIFT.md`](OPENSHIFT.md).
 
 ## 3. Production account
 

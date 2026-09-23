@@ -1,15 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Public demo. Run ./scripts/setup-demo.sh first.
-  lightwell-java searches remediated, then validated. No Lightwell token.
+  Public demo. Run ./scripts/setup-demo.sh (local) or
+  ./scripts/setup-openshift-demo.sh (OpenShift) first.
 
-  Default URL is the local Artifactory virtual repository.
-  Nexus: mvn -f samples/demo/pom.xml dependency:resolve \
-    -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
+  lightwell-java searches remediated, then validated. No Lightwell token in this file.
 
-  Artifactory asks for a login. Pass the local demo settings:
-  mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve
-  That password is the Artifactory login, not a Lightwell token.
+  Beyond this pom, developers also need Maven server credentials whose <id>
+  matches lightwell-java — see samples/settings.xml (Artifactory/Nexus login,
+  not a Lightwell token). Details: OPENSHIFT.md and DEMO-LOCAL.md.
+
+  Local Artifactory (default URL below):
+    mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve
+
+  Local Nexus:
+    mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
+      -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
+
+  OpenShift Artifactory (this kit's Routes — replace host if yours differ):
+    mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
+      -Dlightwell.repo.url=https://artifactory-lightwell-demo.apps.asaran.na-launch.com/artifactory/lightwell-java
+
+  OpenShift Nexus:
+    mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
+      -Dlightwell.repo.url=https://nexus-lightwell-demo.apps.asaran.na-launch.com/repository/lightwell-java
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

@@ -41,15 +41,19 @@ echo "No Lightwell token. Feeds are the public demo."
 echo "Applying openshift/ ..."
 oc apply -k "$ROOT/openshift/"
 
-# Artifactory initContainer runs as uid 0 to chown the PVC.
+# Artifactory runs as uid 1030; Nexus as uid 200. Grant anyuid so SCCs allow it.
 oc adm policy add-scc-to-user anyuid -z lightwell-artifactory -n "$NS" >/dev/null 2>&1 || {
   echo "Could not grant anyuid to lightwell-artifactory (need cluster-admin)."
-  echo "If the Artifactory pod stays Pending or CrashLoop, ask an admin:"
   echo "  oc adm policy add-scc-to-user anyuid -z lightwell-artifactory -n $NS"
+}
+oc adm policy add-scc-to-user anyuid -z lightwell-nexus -n "$NS" >/dev/null 2>&1 || {
+  echo "Could not grant anyuid to lightwell-nexus (need cluster-admin)."
+  echo "  oc adm policy add-scc-to-user anyuid -z lightwell-nexus -n $NS"
 }
 
 echo "Waiting for Artifactory and Nexus Deployments..."
-oc -n "$NS" rollout status deployment/artifactory --timeout=10m
+# Artifactory OSS first boot is slow (Derby + many sidecars-in-process).
+oc -n "$NS" rollout status deployment/artifactory --timeout=20m
 oc -n "$NS" rollout status deployment/nexus --timeout=10m
 
 AF_HOST="$(oc -n "$NS" get route artifactory -o jsonpath='{.spec.host}')"
@@ -132,6 +136,9 @@ fi
 printf '%s' "$ADMIN_PASS" >"$PASS_FILE"
 chmod 600 "$PASS_FILE"
 
+echo "Accepting Nexus Community Edition EULA..."
+integrations_nexus_accept_eula "$NX" "admin:${ADMIN_PASS}"
+
 export LIGHTWELL_COPY_USER=admin
 export LIGHTWELL_COPY_PASSWORD="$ADMIN_PASS"
 
@@ -154,8 +161,9 @@ echo "  mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
 echo "    -Dlightwell.repo.url=${AF}/artifactory/lightwell-java"
 echo
 echo "Demo password is for this OpenShift demo only. Do not reuse it on a shared server."
-echo "If Artifactory initContainer was denied, grant:"
+echo "If a pod is stuck on SCC, grant anyuid:"
 echo "  oc adm policy add-scc-to-user anyuid -z lightwell-artifactory -n ${NS}"
+echo "  oc adm policy add-scc-to-user anyuid -z lightwell-nexus -n ${NS}"
 
 if [[ "$catalog_status" -ne 0 || "$python_status" -ne 0 ]]; then
   echo "Some catalog files did not copy. The repositories are still configured."

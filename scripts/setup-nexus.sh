@@ -82,6 +82,9 @@ fi
 printf '%s' "$ADMIN_PASS" >"$PASS_FILE"
 chmod 600 "$PASS_FILE"
 
+echo "Accepting Nexus Community Edition EULA..."
+integrations_nexus_accept_eula "http://127.0.0.1:${HOST_PORT}" "admin:${ADMIN_PASS}"
+
 python3 - "$LW_URL" "${LIGHTWELL_MODE:-demo}" <<'PY' >"$STATE/nexus-repo.json"
 import json, os, sys
 url, mode = sys.argv[1], sys.argv[2]

@@ -180,3 +180,19 @@ integrations_ensure_container() {
   fi
   podman run -d --name "$name" "$@"
 }
+
+# Nexus Repository Community Edition blocks proxy/upload until the CE EULA is accepted.
+# USER_PASS is "user:password". BASE is the Nexus root URL (no trailing slash).
+integrations_nexus_accept_eula() {
+  local base="$1" user_pass="$2" body code
+  body="$(integrations_curl -fsS -u "$user_pass" "${base}/service/rest/v1/system/eula" \
+    | python3 -c 'import json,sys; d=json.load(sys.stdin); d["accepted"]=True; print(json.dumps(d))')"
+  code="$(integrations_curl -sS -o /dev/null -w '%{http_code}' -u "$user_pass" -X POST \
+    -H "Content-Type: application/json" \
+    --data-binary "$body" \
+    "${base}/service/rest/v1/system/eula" || true)"
+  if [[ "$code" != "204" && "$code" != "200" ]]; then
+    echo "Nexus CE EULA accept returned HTTP ${code}." >&2
+    return 1
+  fi
+}

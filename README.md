@@ -52,10 +52,21 @@ mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
 
 Step-by-step, including what each repository name means: [`DEMO-LOCAL.md`](DEMO-LOCAL.md).
 
+**OpenShift** (after `./scripts/setup-openshift-demo.sh`):
+
+```bash
+mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
+  -Dlightwell.repo.url=https://artifactory-lightwell-demo.apps.asaran.na-launch.com/artifactory/lightwell-java
+```
+
+Developers change more than `pom.xml`: they also need Maven `settings.xml` credentials
+for Artifactory/Nexus (id `lightwell-java`), and on OpenShift a JVM that trusts the
+router cert. Sample pom, settings, and smoke tests: [`OPENSHIFT.md`](OPENSHIFT.md).
+
 | Guide | When you need it |
 |---|---|
 | [`DEMO-LOCAL.md`](DEMO-LOCAL.md) | You are running Artifactory and Nexus on this machine |
-| [`OPENSHIFT.md`](OPENSHIFT.md) | You are running Artifactory and Nexus on OpenShift (public demo) |
+| [`OPENSHIFT.md`](OPENSHIFT.md) | You are running Artifactory and Nexus on OpenShift (public demo); includes developer laptop changes and smoke tests |
 | [`ARTIFACTORY.md`](ARTIFACTORY.md) | You already have an Artifactory server and want the click path |
 | [`NEXUS.md`](NEXUS.md) | You already have a Nexus server and want the click path |
 | [`SONARQUBE.md`](SONARQUBE.md) | You already use Sonar. Skip this if you do not. |

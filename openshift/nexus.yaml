@@ -52,14 +52,14 @@ spec:
           readinessProbe:
             tcpSocket:
               port: http
-            initialDelaySeconds: 60
+            initialDelaySeconds: 90
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 36
           livenessProbe:
             tcpSocket:
               port: http
-            initialDelaySeconds: 180
+            initialDelaySeconds: 240
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 6
@@ -68,8 +68,8 @@ spec:
               mountPath: /nexus-data
       volumes:
         - name: data
-          persistentVolumeClaim:
-            claimName: nexus-data
+          emptyDir:
+            sizeLimit: 10Gi
 ---
 apiVersion: v1
 kind: Service
