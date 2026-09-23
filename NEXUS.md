@@ -159,6 +159,9 @@ mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve \
   -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
 ```
 
+(`samples/prod/pom.xml` defaults to the OpenShift Artifactory Route; pass the Nexus
+URL above for local Nexus.)
+
 [`samples/settings.xml`](samples/settings.xml) is the local demo login. On a Nexus
 server you already run, put that server’s login in the same server id `lightwell-java`.
 

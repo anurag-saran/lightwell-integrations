@@ -183,8 +183,11 @@ Sample builds: [`samples/demo/pom.xml`](samples/demo/pom.xml) and
 
 ```bash
 mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve
-mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve
+mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve \
+  -Dlightwell.repo.url=http://127.0.0.1:8082/artifactory/lightwell-java
 ```
+
+(`samples/prod/pom.xml` defaults to the OpenShift Artifactory Route; override as above for local.)
 
 Put the Lightwell token on each remote, not in the pom or in CI. Follow JFrog’s
 [Connect your Maven Client to Artifactory](https://jfrog.com/help/r/jfrog-artifactory-documentation/maven-repository)

@@ -67,7 +67,13 @@ mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
 ```
 
 [`samples/prod/pom.xml`](samples/prod/pom.xml) resolves `snakeyaml` `1.33.0.rhlw-00001`.
-That version is on the public demo, so this command works after the demo setup too.
+Its default URL is the OpenShift Artifactory Route; for this machine pass the local URL:
+
+```bash
+mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve \
+  -Dlightwell.repo.url=http://127.0.0.1:8082/artifactory/lightwell-java
+```
+
 After the production setup below, change `lightwell.version` in that file to the
 build you are adopting.
 
