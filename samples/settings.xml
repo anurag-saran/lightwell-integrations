@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Local demo login for Artifactory and Nexus. This is not the Lightwell token.
+  Password is local-only. Do not reuse it on a shared server.
+
+  mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve
+-->
+<settings>
+  <servers>
+    <server>
+      <id>lightwell-java</id>
+      <username>admin</username>
+      <password>Lightwell-demo1</password>
+    </server>
+  </servers>
+</settings>

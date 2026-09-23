@@ -1,68 +1,79 @@
 # Lightwell integrations
 
-After setup, `lightwell-java-remediated` on your Artifactory or Nexus server can fetch a
-Lightwell jar, and that jar is stored on your server.
+This repository connects a Java build to Lightwell. Your Artifactory or Nexus server
+fetches the jar and stores it. Maven asks that server for the jar. Maven does not
+call Lightwell itself, and the Lightwell token is not stored in `pom.xml`.
 
-These guides walk a first-time operator through that connection. They are not a
-substitute for Red Hat’s product documentation. SonarQube does not proxy or copy
-Lightwell; it only gates application code quality.
-
-upgrade-delta grades the bump after the jar is resolvable. It is a separate
-internal project. This repository does not include it.
+These pages are a first-time walkthrough. They are not a substitute for Red Hat’s
+product documentation. SonarQube does not fetch Lightwell jars. upgrade-delta, which
+grades a dependency bump, is a separate project and is not in this repository.
 
 ## Start here
 
-From this repository, on a machine with Podman:
+You need Podman and Maven. On a Mac, the first time only:
+
+```bash
+podman machine init --memory 8192
+```
+
+From this repository, pick one command.
+
+**Trying it out** (no Lightwell account):
 
 ```bash
 ./scripts/setup-demo.sh
 ```
 
-That repeats the public demo: local Artifactory and Nexus, no Lightwell token, and
-the small public catalogs. For a production service account:
+**Your company’s Lightwell account** (the script asks for the user and token, and does not print the token):
 
 ```bash
 ./scripts/setup-prod.sh
 ```
 
-It asks for the Lightwell user (`XXXXXXX|service-account-name`) and token, then
-points those same local servers at the production Java feeds. It does not copy the
-production catalog. SonarQube stays optional: `./scripts/setup-sonarqube.sh`.
-Details are in [`DEMO-LOCAL.md`](DEMO-LOCAL.md).
+Then open the UI and log in with `admin` / `Lightwell-demo1`. That password is only for this local demo. Do not reuse it on a shared server.
 
-Point Maven at the local `lightwell-java` repository, not at packages.redhat.com.
-Sample builds:
+| | Address |
+|---|---|
+| Artifactory | http://127.0.0.1:8082/ui/ |
+| Nexus | http://127.0.0.1:8083/ |
+
+Confirm Maven can fetch a Lightwell jar. The `-s` file is the Artifactory login, not the Lightwell token.
 
 ```bash
-mvn -f samples/demo/pom.xml dependency:resolve
-mvn -f samples/prod/pom.xml dependency:resolve
+mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve
 ```
 
-[`samples/demo/pom.xml`](samples/demo/pom.xml) uses a public-demo library.
-[`samples/prod/pom.xml`](samples/prod/pom.xml) is the same client URL after
-`setup-prod.sh`. Change `lightwell.version` to the production build you adopt.
-The token stays on Artifactory or Nexus.
+`BUILD SUCCESS` means Artifactory stored `commons-io` `2.11.0.rhlw-00001`. The same check through Nexus:
+
+```bash
+mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
+  -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
+```
+
+Step-by-step, including what each repository name means: [`DEMO-LOCAL.md`](DEMO-LOCAL.md).
 
 | Guide | When you need it |
 |---|---|
-| [`ARTIFACTORY.md`](ARTIFACTORY.md) | JFrog Artifactory is your Maven remote |
-| [`NEXUS.md`](NEXUS.md) | Sonatype Nexus is your Maven proxy |
-| [`SONARQUBE.md`](SONARQUBE.md) | You already gate merges with Sonar |
-| [`DEMO-LOCAL.md`](DEMO-LOCAL.md) | Stand the three tools up locally with Podman |
+| [`DEMO-LOCAL.md`](DEMO-LOCAL.md) | You are running Artifactory and Nexus on this machine |
+| [`ARTIFACTORY.md`](ARTIFACTORY.md) | You already have an Artifactory server and want the click path |
+| [`NEXUS.md`](NEXUS.md) | You already have a Nexus server and want the click path |
+| [`SONARQUBE.md`](SONARQUBE.md) | You already use Sonar. Skip this if you do not. |
 
 ## Words used here
 
 | Word | Meaning |
 |---|---|
-| **Remote / proxy** | The connection from your server to Lightwell. Artifactory calls it a remote repository. Nexus calls it a Maven2 proxy. |
-| **Cache** | The local copy. The first request for a jar downloads it from Lightwell and stores it on your server. The next request for that same file does not leave your server. |
-| **`pom.xml`** | Still yours. A new `.rhlw` build does not edit your version. You change the version when you want to adopt it. |
+| **`.rhlw-00001`** | The end of a Lightwell version, for example `2.11.0.rhlw-00001`. You type that version into `pom.xml` when you want that build. |
+| **Remediated / Validated / Predisclosure** | Three Lightwell feeds. Remediated and Validated are on the public demo. Predisclosure exists only in production. |
+| **Remote / proxy** | One connection from your server to one feed. Artifactory calls it a remote repository. Nexus calls it a Maven2 proxy. |
+| **Virtual / group** | One URL your build uses. It searches the feeds in order. The name in this kit is `lightwell-java`. |
+| **Cache** | The local copy. The first request downloads the jar from Lightwell. The next request for that same file stays on your server. |
 
 ## What this is / is not
 
-**Is:** one remote (or proxy) repository so Maven/Gradle resolve `.rhlw-*` coordinates
-the same way they resolve Central — credentials live on the repo manager once, not on
-every CI job.
+**Is:** one URL (`lightwell-java`) so Maven resolves a `.rhlw` version the same way
+it resolves Maven Central. The Lightwell user and token live on Artifactory or Nexus,
+once, not in each build.
 
 **Is not:** a grade of the upgrade. Artifactory/Nexus make a remediated build
 *available*. SonarQube still owns app-code quality. Neither tells you which of your
@@ -88,8 +99,9 @@ combined view.
 
 ## How it stays in sync
 
-The setup does not download the whole Lightwell catalog, and running the setup script
-again does not sync anything.
+`setup-demo.sh` copies the small public catalog once. `setup-prod.sh` does not copy
+the production catalog. Running either script again does not download builds that
+Lightwell publishes later.
 
 1. Lightwell publishes a new `.rhlw` build.
 2. Your server re-reads `maven-metadata.xml` after the metadata cache age. On
@@ -98,12 +110,12 @@ again does not sync anything.
    set **Maximum metadata age** to 60 minutes.
 3. A build that asks for that version copies the jar into the cache.
 
-Release jars that are already cached stay cached. They do not change. You do not
-recreate `lightwell-java-remediated` to pick up a new build.
+A jar that is already cached stays as it is. You change the version in `pom.xml` when
+you want a newer build. You do not recreate `lightwell-java` to pick it up.
 
-## Demo narrative
+## What success looks like
 
-1. Show the repo config screen in Artifactory, then Nexus — one remote, additive to existing builds.
-2. Resolve one coordinate through each, e.g. `com.jayway.jsonpath:json-path:2.8.0.rhlw-00001`.
-3. Say what the repo manager did not do: it did not grade whether adopting that jar is safe to test-scope. That grade is upgrade-delta, a separate project.
-4. Sonar quality gate for app health stays in place. It does not replace the upgrade grade. See [`SONARQUBE.md`](SONARQUBE.md).
+1. Artifactory and Nexus each show a repository named `lightwell-java`.
+2. `mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve` prints `BUILD SUCCESS`.
+3. The servers stored the jar. They did not decide whether your application should adopt it. That grade is upgrade-delta, a separate project.
+4. SonarQube, if you start it, still only checks your application code. See [`SONARQUBE.md`](SONARQUBE.md).

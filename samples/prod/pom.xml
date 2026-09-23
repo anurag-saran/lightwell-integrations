@@ -9,8 +9,9 @@
     -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
 
   Change lightwell.version to the production .rhlw build you are adopting.
-  The version below is also on the public demo, so this file can be tried
-  before a production token is configured.
+  The version below is also on the public demo, so this file works after
+  setup-demo.sh as well. Do not put the Lightwell token in this file.
+  Artifactory login: -s samples/settings.xml (admin / Lightwell-demo1).
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

@@ -12,7 +12,7 @@ if [[ "$TOOL" != "artifactory" && "$TOOL" != "nexus" ]]; then
   exit 2
 fi
 
-SMOKE="${LIGHTWELL_SMOKE_PATH:-org/springframework/spring-core/5.3.18.rhlw-00003/spring-core-5.3.18.rhlw-00003.jar}"
+SMOKE="${LIGHTWELL_SMOKE_PATH:-com/fasterxml/woodstox/woodstox-core/6.0.3.rhlw-00001/woodstox-core-6.0.3.rhlw-00001.jar}"
 STATE="$(integrations_state_dir)"
 mkdir -p "$STATE"
 OUT="$STATE/$(basename "$SMOKE")"

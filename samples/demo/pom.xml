@@ -7,8 +7,9 @@
   Nexus: mvn -f samples/demo/pom.xml dependency:resolve \
     -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
 
-  Artifactory asks for a login. In settings.xml, server id lightwell-java
-  is admin / Lightwell-demo1. That password is local-only.
+  Artifactory asks for a login. Pass the local demo settings:
+  mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve
+  That password is the Artifactory login, not a Lightwell token.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

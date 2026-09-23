@@ -1,4 +1,13 @@
-# Compose SonarQube with a dependency-upgrade grade
+# SonarQube next to Lightwell
+
+Skip this page if you do not already use SonarQube. SonarQube does not fetch Lightwell
+jars. To start it locally anyway:
+
+```bash
+./scripts/setup-sonarqube.sh
+```
+
+Open http://127.0.0.1:9000/ and log in as `admin` / `Lightwell-demo1`.
 
 There is **no native SonarQube / SonarCloud plugin** that grades a Lightwell dependency
 bump. Do not hunt for one in Marketplace. This guide explains how Sonar sits next to
