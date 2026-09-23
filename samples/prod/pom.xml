@@ -1,17 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Production. Run ./scripts/setup-prod.sh first.
-  The token stays on Artifactory or Nexus. Do not put it in this file.
-  lightwell-java searches predisclosure, then remediated, then validated.
+  Production-shaped sample. Run ./scripts/setup-prod.sh (local) or
+  ./scripts/setup-openshift-demo.sh (OpenShift public demo) first.
 
-  Default URL is the local Artifactory virtual repository.
-  Nexus: mvn -f samples/prod/pom.xml dependency:resolve \
-    -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
+  The Lightwell token stays on Artifactory or Nexus. Do not put it in this file.
+  lightwell-java searches predisclosure → remediated → validated (prod setup),
+  or remediated → validated (public demo / OpenShift).
 
-  Change lightwell.version to the production .rhlw build you are adopting.
-  The version below is also on the public demo, so this file works after
-  setup-demo.sh as well. Do not put the Lightwell token in this file.
-  Artifactory login: -s samples/settings.xml (admin / Lightwell-demo1).
+  Default URL is this kit's OpenShift Artifactory Route.
+  Change lightwell.version to the .rhlw build you are adopting.
+  Artifactory/Nexus login: -s samples/settings.xml (admin / Lightwell-demo1).
+
+  OpenShift Artifactory (default below):
+    mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve
+
+  OpenShift Nexus:
+    mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve \
+      -Dlightwell.repo.url=https://nexus-lightwell-demo.apps.asaran.na-launch.com/repository/lightwell-java
+
+  Local Podman Artifactory:
+    mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve \
+      -Dlightwell.repo.url=http://127.0.0.1:8082/artifactory/lightwell-java
+
+  Local Podman Nexus:
+    mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve \
+      -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -24,14 +37,14 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <lightwell.repo.url>http://127.0.0.1:8082/artifactory/lightwell-java</lightwell.repo.url>
+    <lightwell.repo.url>https://artifactory-lightwell-demo.apps.asaran.na-launch.com/artifactory/lightwell-java</lightwell.repo.url>
     <lightwell.version>1.33.0.rhlw-00001</lightwell.version>
   </properties>
 
   <repositories>
     <repository>
       <id>lightwell-java</id>
-      <name>Local Lightwell Java</name>
+      <name>Lightwell Java</name>
       <url>${lightwell.repo.url}</url>
       <releases>
         <enabled>true</enabled>
