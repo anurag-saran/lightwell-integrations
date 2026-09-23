@@ -9,6 +9,31 @@ This path uses **Deployments + Routes** (and `emptyDir` for demo data). It does
 
 Local Podman demo: [`DEMO-LOCAL.md`](DEMO-LOCAL.md).
 
+## Demo URLs and login
+
+On this kit’s OpenShift cluster (after `./scripts/setup-openshift-demo.sh`):
+
+| Service | Web URL |
+|---|---|
+| Artifactory UI | https://artifactory-lightwell-demo.apps.asaran.na-launch.com/ui/ |
+| Nexus UI | https://nexus-lightwell-demo.apps.asaran.na-launch.com/ |
+
+| | |
+|---|---|
+| **Username** | `admin` |
+| **Password** | `Lightwell-demo1` |
+
+Maven repository URLs (same login via [`samples/settings.xml`](samples/settings.xml)):
+
+| Service | Maven URL |
+|---|---|
+| Artifactory | https://artifactory-lightwell-demo.apps.asaran.na-launch.com/artifactory/lightwell-java |
+| Nexus | https://nexus-lightwell-demo.apps.asaran.na-launch.com/repository/lightwell-java |
+
+That password is for this OpenShift demo only. Do not reuse it on a shared server.
+If you deploy on another cluster, replace the host with your Route from
+`oc -n lightwell-demo get route`.
+
 ## Before you start
 
 - `oc` logged into a cluster where you can create a Namespace, Deployment,
@@ -45,19 +70,8 @@ Artifactory OSS first boot is slow (often 10–15 minutes). The script waits up 
 
 ## After it finishes
 
-The script prints the Route URLs. On this kit’s cluster they are:
-
-| | URL |
-|---|---|
-| Artifactory UI | https://artifactory-lightwell-demo.apps.asaran.na-launch.com/ui/ |
-| Nexus UI | https://nexus-lightwell-demo.apps.asaran.na-launch.com/ |
-| Artifactory Maven | https://artifactory-lightwell-demo.apps.asaran.na-launch.com/artifactory/lightwell-java |
-| Nexus Maven | https://nexus-lightwell-demo.apps.asaran.na-launch.com/repository/lightwell-java |
-
-Login: `admin` / `Lightwell-demo1`. That password is for this demo only. Do not
-reuse it on a shared server.
-
-Replace the host with your own Routes if you deployed into a different cluster.
+The script prints the same Route URLs. Open the UIs from
+[Demo URLs and login](#demo-urls-and-login) above (`admin` / `Lightwell-demo1`).
 
 ---
 
