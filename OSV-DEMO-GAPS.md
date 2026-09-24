@@ -6,7 +6,7 @@ Share this file: [OSV-DEMO-GAPS.md on main](https://github.com/anurag-saran/ligh
 
 ## Summary
 
-- Public-demo OSV covers **remediated Java only**. There is no validated OSV path.
+- Public-demo OSV covers **remediated Java** (validated OSV is out of scope for this report).
 - Not every published remediated jar has an OSV `fixed` event that matches that jar.
 - Each OSV document is a CVE advisory (`aliases`, `fixed` version, `golden_pipeline_id`). It is **not** a full SBOM of what went into the build.
 
@@ -17,7 +17,6 @@ Share this file: [OSV-DEMO-GAPS.md on main](https://github.com/anurag-saran/ligh
 | Remediated Maven | [java/remediated/](https://packages.redhat.com/lightwell/public-lightwell-demo/java/remediated/) | 200 |
 | Validated Maven | [java/validated/](https://packages.redhat.com/lightwell/public-lightwell-demo/java/validated/) | 200 |
 | Remediated OSV | [osv/java/remediated/](https://packages.redhat.com/api/pulp-content/public-lightwell-demo/osv/java/remediated/) | 200 (11 JSON files) |
-| Validated OSV | [osv/java/validated/](https://packages.redhat.com/api/pulp-content/public-lightwell-demo/osv/java/validated/) | **404** |
 
 ## Issue A — spring-core: published build ≠ OSV `fixed`
 
@@ -50,27 +49,6 @@ These remediated OSV documents claim `fixed: 5.3.18.rhlw-00010` on `spring-webmv
 
 **Ask:** either publish those Spring modules (and `rhlw-00010`) on the public remediated demo, or drop / retarget these OSV docs so every `fixed` GAV resolves on the same demo feed.
 
-## Issue C — validated jars have no OSV
-
-Validated Maven works. Validated OSV does not.
-
-- [osv/java/validated/](https://packages.redhat.com/api/pulp-content/public-lightwell-demo/osv/java/validated/) → **404**
-- [java/validated/](https://packages.redhat.com/lightwell/public-lightwell-demo/java/validated/) → **200**
-
-Validated libraries on the public demo (no matching OSV feed):
-
-| GAV | Maven path |
-|---|---|
-| `ch.qos.logback:logback-classic:1.2.11.rhlw-00001` | [logback-classic … jar](https://packages.redhat.com/lightwell/public-lightwell-demo/java/validated/ch/qos/logback/logback-classic/1.2.11.rhlw-00001/logback-classic-1.2.11.rhlw-00001.jar) |
-| `com.fasterxml.jackson.core:jackson-databind:2.13.4.rhlw-00001` | [jackson-databind … jar](https://packages.redhat.com/lightwell/public-lightwell-demo/java/validated/com/fasterxml/jackson/core/jackson-databind/2.13.4.rhlw-00001/jackson-databind-2.13.4.rhlw-00001.jar) |
-| `commons-fileupload:commons-fileupload:1.4.0.rhlw-00001` | [commons-fileupload … jar](https://packages.redhat.com/lightwell/public-lightwell-demo/java/validated/commons-fileupload/commons-fileupload/1.4.0.rhlw-00001/commons-fileupload-1.4.0.rhlw-00001.jar) |
-| `commons-io:commons-io:2.11.0.rhlw-00001` | [commons-io … jar](https://packages.redhat.com/lightwell/public-lightwell-demo/java/validated/commons-io/commons-io/2.11.0.rhlw-00001/commons-io-2.11.0.rhlw-00001.jar) |
-| `org.apache.httpcomponents:httpclient:4.5.12.rhlw-00001` | [httpclient … jar](https://packages.redhat.com/lightwell/public-lightwell-demo/java/validated/org/apache/httpcomponents/httpclient/4.5.12.rhlw-00001/httpclient-4.5.12.rhlw-00001.jar) |
-| `org.json:json:20220320.0.0.rhlw-00003` | [json … jar](https://packages.redhat.com/lightwell/public-lightwell-demo/java/validated/org/json/json/20220320.0.0.rhlw-00003/json-20220320.0.0.rhlw-00003.jar) |
-| `org.yaml:snakeyaml:1.33.0.rhlw-00001` | [snakeyaml … jar](https://packages.redhat.com/lightwell/public-lightwell-demo/java/validated/org/yaml/snakeyaml/1.33.0.rhlw-00001/snakeyaml-1.33.0.rhlw-00001.jar) |
-
-**Ask:** publish `osv/java/validated/` for these builds, **or** document that public-demo validated builds intentionally ship without CVE advisories.
-
 ## What matches today
 
 These remediated jars have an OSV `fixed` event equal to the published version.
@@ -95,11 +73,9 @@ Present in each remediated OSV JSON (example: [woodstox CVE JSON](https://packag
 Not present:
 
 - A full dependency SBOM / bill of materials for everything that went into the build
-- Any OSV under validated (or predisclosure) on this public demo
 
 ## Requested eng actions
 
 1. **Issue A:** Align `spring-core` Maven and OSV (`rhlw-00003` vs `rhlw-00010`).
 2. **Issue B:** Publish `spring-webmvc` / `spring-expression` `5.3.18.rhlw-00010` on the remediated demo, or retarget those five OSV docs.
-3. **Issue C:** Add `osv/java/validated/` for the seven validated demo libraries, or document that validated has no public-demo OSV by design.
-4. **Invariant for demos:** every OSV `fixed` GAV on the public demo should resolve with HTTP 200 on the matching Maven feed.
+3. **Invariant for demos:** every OSV `fixed` GAV on the public demo should resolve with HTTP 200 on the matching Maven feed.
