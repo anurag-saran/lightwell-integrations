@@ -258,3 +258,5 @@ pods are deleted.
 - OLM Operators for Artifactory or Nexus
 - Production Lightwell user/token (use the local [`scripts/setup-prod.sh`](scripts/setup-prod.sh) pattern later, or set credentials on the remotes by hand per [`ARTIFACTORY.md`](ARTIFACTORY.md))
 - SonarQube
+
+GitLab CE + Lightwell plugin demo on the same cluster: [`GITLAB-OPENSHIFT.md`](GITLAB-OPENSHIFT.md).

@@ -1,0 +1,243 @@
+# Omnibus GitLab CE — single Deployment for small OpenShift demos (SNO-friendly).
+# Prefer this when the full gitlab/gitlab Helm chart OOMs the node.
+# Install path: LIGHTWELL_GITLAB_MODE=omnibus ./scripts/setup-openshift-gitlab.sh
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lightwell-gitlab
+  labels:
+    app.kubernetes.io/part-of: lightwell-gitlab-demo
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lightwell-gitlab
+  namespace: lightwell-gitlab
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: lightwell-gitlab-root
+  namespace: lightwell-gitlab
+type: Opaque
+stringData:
+  password: Lightwell-demo1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab
+  namespace: lightwell-gitlab
+  labels:
+    app: gitlab
+spec:
+  replicas: 1
+  progressDeadlineSeconds: 1800
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: gitlab
+  template:
+    metadata:
+      labels:
+        app: gitlab
+    spec:
+      serviceAccountName: lightwell-gitlab
+      containers:
+        - name: gitlab
+          image: docker.io/gitlab/gitlab-ce:17.5.1-ce.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+            - name: ssh
+              containerPort: 22
+          env:
+            - name: GITLAB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: lightwell-gitlab-root
+                  key: password
+            # Patched by setup-openshift-gitlab.sh to the admitted Route URL.
+            - name: EXTERNAL_URL
+              value: "https://gitlab-lightwell-gitlab.apps.asaran.na-launch.com"
+            - name: GITLAB_OMNIBUS_CONFIG
+              value: |
+                nginx['listen_port'] = 80
+                nginx['listen_https'] = false
+                letsencrypt['enable'] = false
+                prometheus_monitoring['enable'] = false
+                grafana['enable'] = false
+                alertmanager['enable'] = false
+                puma['worker_processes'] = 2
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 3Gi
+            limits:
+              cpu: "2"
+              memory: 5Gi
+          readinessProbe:
+            httpGet:
+              path: /users/sign_in
+              port: http
+            initialDelaySeconds: 300
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 40
+          livenessProbe:
+            httpGet:
+              path: /users/sign_in
+              port: http
+            initialDelaySeconds: 600
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 10
+          volumeMounts:
+            - name: data
+              mountPath: /var/opt/gitlab
+            - name: config
+              mountPath: /etc/gitlab
+            - name: logs
+              mountPath: /var/log/gitlab
+      volumes:
+        - name: data
+          emptyDir:
+            sizeLimit: 20Gi
+        - name: config
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: logs
+          emptyDir:
+            sizeLimit: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitlab
+  namespace: lightwell-gitlab
+  labels:
+    app: gitlab
+spec:
+  selector:
+    app: gitlab
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+    - name: ssh
+      port: 22
+      targetPort: ssh
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: gitlab
+  namespace: lightwell-gitlab
+  labels:
+    app: gitlab
+spec:
+  to:
+    kind: Service
+    name: gitlab
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lightwell-gitlab-runner
+  namespace: lightwell-gitlab
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: lightwell-gitlab-runner
+  namespace: lightwell-gitlab
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/exec", "secrets", "configmaps"]
+    verbs: ["get", "list", "watch", "create", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: lightwell-gitlab-runner
+  namespace: lightwell-gitlab
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: lightwell-gitlab-runner
+subjects:
+  - kind: ServiceAccount
+    name: lightwell-gitlab-runner
+    namespace: lightwell-gitlab
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lightwell-gitlab-runner-config
+  namespace: lightwell-gitlab
+data:
+  config.toml: |
+    concurrent = 2
+    check_interval = 5
+    log_level = "info"
+    [[runners]]
+      name = "lightwell-openshift-k8s"
+      url = "http://gitlab.lightwell-gitlab.svc:80/"
+      token = "REPLACE_WITH_RUNNER_TOKEN"
+      executor = "kubernetes"
+      [runners.kubernetes]
+        namespace = "lightwell-gitlab"
+        image = "ubuntu:22.04"
+        privileged = false
+        cpu_request = "100m"
+        memory_request = "256Mi"
+        memory_limit = "1Gi"
+        service_account = "lightwell-gitlab-runner"
+        poll_timeout = 180
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab-runner
+  namespace: lightwell-gitlab
+  labels:
+    app: gitlab-runner
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: gitlab-runner
+  template:
+    metadata:
+      labels:
+        app: gitlab-runner
+    spec:
+      serviceAccountName: lightwell-gitlab-runner
+      containers:
+        - name: runner
+          image: registry.gitlab.com/gitlab-org/gitlab-runner:v17.5.1
+          args: ["run", "--user=gitlab-runner", "--working-directory=/home/gitlab-runner"]
+          volumeMounts:
+            - name: config
+              mountPath: /etc/gitlab-runner
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+      volumes:
+        - name: config
+          configMap:
+            name: lightwell-gitlab-runner-config

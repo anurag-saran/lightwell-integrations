@@ -63,10 +63,21 @@ Developers change more than `pom.xml`: they also need Maven `settings.xml` crede
 for Artifactory/Nexus (id `lightwell-java`), and on OpenShift a JVM that trusts the
 router cert. Sample pom, settings, and smoke tests: [`OPENSHIFT.md`](OPENSHIFT.md).
 
+**GitLab on OpenShift** (plugin demo that opens remediation MRs):
+
+```bash
+./scripts/setup-openshift-gitlab.sh
+```
+
+Guide: [`GITLAB-OPENSHIFT.md`](GITLAB-OPENSHIFT.md). Plugin repo:
+[lightwell-gitlab-plugin-demo](https://github.com/anurag-saran/lightwell-gitlab-plugin-demo)
+(create/push when ready; sources live alongside this kit).
+
 | Guide | When you need it |
 |---|---|
 | [`DEMO-LOCAL.md`](DEMO-LOCAL.md) | You are running Artifactory and Nexus on this machine |
 | [`OPENSHIFT.md`](OPENSHIFT.md) | You are running Artifactory and Nexus on OpenShift (public demo); includes developer laptop changes and smoke tests |
+| [`GITLAB-OPENSHIFT.md`](GITLAB-OPENSHIFT.md) | GitLab CE + Runner on OpenShift for the Lightwell GitLab plugin demo |
 | [`ARTIFACTORY.md`](ARTIFACTORY.md) | You already have an Artifactory server and want the click path |
 | [`NEXUS.md`](NEXUS.md) | You already have a Nexus server and want the click path |
 | [`SONARQUBE.md`](SONARQUBE.md) | You already use Sonar. Skip this if you do not. |
