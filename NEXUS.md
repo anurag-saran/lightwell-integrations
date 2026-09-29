@@ -5,7 +5,8 @@ Running Nexus on this machine? Stop here and follow [`DEMO-LOCAL.md`](DEMO-LOCAL
 for a Nexus server you already administer.
 
 After these steps, Nexus can fetch a Lightwell jar and store it. Maven uses the
-**group** repository `lightwell-java`, not packages.redhat.com.
+**existing org group** repository `acmebank_java_repo` (which includes the Lightwell
+group `lightwell-java`), not packages.redhat.com.
 
 A **proxy** is one connection from Nexus to one Lightwell feed. The **cache** is the
 local copy made the first time something requests a file. The **group** repository is
@@ -35,8 +36,12 @@ Local Podman start: [`DEMO-LOCAL.md`](DEMO-LOCAL.md).
 | `lightwell-java-remediated` | Maven2 (proxy) | Create | Create |
 | `lightwell-java-validated` | Maven2 (proxy) | Create | Create |
 | `lightwell-java` | Maven2 (group) | Members: remediated, then validated | Members: predisclosure, then remediated, then validated |
+| `maven-central` | Maven2 (proxy) | Create (or reuse your existing Central proxy) | Same |
+| `acmebank_java_repo` | Maven2 (group) | Members: `lightwell-java`, then **`maven-central` (last)** | Same |
 
-Maven and CI point only at `lightwell-java`.
+Maven and CI keep pointing at `acmebank_java_repo`. Admins add `lightwell-java`
+**ahead of** `maven-central` so `.rhlw` builds win when present and ordinary
+Central deps still resolve. Developers mainly change dependency versions to `.rhlw`.
 
 ---
 
@@ -89,7 +94,7 @@ Do **not** create `lightwell-java-predisclosure` for the public demo.
 
 Use the same service-account user and token on each proxy.
 
-### 2. Create the group repository
+### 2. Create the Lightwell group repository
 
 1. **Create a new repository** → type **Maven2 (group)**.
 2. Name: `lightwell-java`.
@@ -103,32 +108,47 @@ Use the same service-account user and token on each proxy.
 
 5. Save.
 
-Maven uses this one URL. Search stops at the first proxy that has the file.
+### 3. Add Lightwell to the existing org group
 
-### 3. Local Podman note
+If your teams already use a group such as `acmebank_java_repo`:
 
-`./scripts/setup-demo.sh` and `./scripts/setup-prod.sh` create these proxies and the group
-for you (layout Strict, metadata age 60 minutes, negative cache 60 minutes, auto-block off).
-You do not need to run `scripts/setup-nexus.sh` yourself when you use those commands.
+1. Ensure a **Maven Central** proxy exists (this kit uses name `maven-central` →
+   `https://repo1.maven.org/maven2/`).
+2. Open the org group (or create it) as **Maven2 (group)** with **Layout Policy: Strict**.
+3. Member list, top searched first:
+   1. `lightwell-java`
+   2. `maven-central` (**last** — so non-`.rhlw` deps and plugins still succeed)
+4. Save.
+
+Maven keeps using `acmebank_java_repo`. Effective resolve order is remediated →
+validated → Maven Central. Search stops at the first member that has the file.
+
+### 4. Local Podman note
+
+`./scripts/setup-demo.sh` and `./scripts/setup-prod.sh` create these proxies, the
+Lightwell group, and `acmebank_java_repo` for you (layout Strict, metadata age 60
+minutes, negative cache 60 minutes, auto-block off). You do not need to run
+`scripts/setup-nexus.sh` yourself when you use those commands.
 
 ---
 
 ## Verify
 
-Point Maven at the **group** repository, not at a single proxy and not at
-packages.redhat.com.
+Point Maven at the **org group** repository (`acmebank_java_repo`), not at a single
+proxy and not at packages.redhat.com.
 
 On the local demo (Nexus at `http://127.0.0.1:8083`):
 
 ```bash
 mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
-  -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
+  -Dacmebank.repo.url=http://127.0.0.1:8083/repository/acmebank_java_repo
 ```
 
-`BUILD SUCCESS` means `lightwell-java` resolved a validated library
-(`commons-io` `2.11.0.rhlw-00001`), so the group had to look past remediated.
+`BUILD SUCCESS` means `acmebank_java_repo` → `lightwell-java` resolved a validated
+library (`commons-io` `2.11.0.rhlw-00001`), so the Lightwell group had to look past
+remediated.
 
-On a server you already run, use that server’s Nexus URL for `lightwell-java`.
+On a server you already run, use that server’s Nexus URL for `acmebank_java_repo`.
 
 Optional single-proxy check (remediated only):
 
@@ -143,29 +163,30 @@ Success is HTTP 200 and a non-empty `woodstox-core` `6.0.3.rhlw-00001` under
 
 ## Point Maven at Nexus
 
-Clients use the group repository:
+Clients use the existing org group repository:
 
-`https://<your-nexus-host>/repository/lightwell-java`
+`https://<your-nexus-host>/repository/acmebank_java_repo`
 
-Local demo URL: `http://127.0.0.1:8083/repository/lightwell-java`
+Local demo URL: `http://127.0.0.1:8083/repository/acmebank_java_repo`
 
 Sample builds: [`samples/demo/pom.xml`](samples/demo/pom.xml) and
 [`samples/prod/pom.xml`](samples/prod/pom.xml).
 
 ```bash
 mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
-  -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
+  -Dacmebank.repo.url=http://127.0.0.1:8083/repository/acmebank_java_repo
 mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve \
-  -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
+  -Dacmebank.repo.url=http://127.0.0.1:8083/repository/acmebank_java_repo
 ```
 
 (`samples/prod/pom.xml` defaults to the OpenShift Artifactory Route; pass the Nexus
 URL above for local Nexus.)
 
 [`samples/settings.xml`](samples/settings.xml) is the local demo login. On a Nexus
-server you already run, put that server’s login in the same server id `lightwell-java`.
+server you already run, put that server’s login in the same server id
+`acmebank_java_repo`.
 
-Put Lightwell credentials on each proxy and keep CI pointed at the group only. See
+Put Lightwell credentials on each proxy and keep CI pointed at the org group. See
 Red Hat’s
 [Configure your Java build tool](https://docs.redhat.com/en/documentation/lightwell_network/current/configure-configure_java_build_tool).
 
@@ -190,11 +211,9 @@ the owed tests. That grade is upgrade-delta, a separate project.
 | Symptom | Check |
 |---|---|
 | Odd / missing `.rhlw-` versions | **Layout Policy** must be **Strict** on every proxy and on the group |
-| Validated jar not found through `lightwell-java` | Group members include `lightwell-java-validated`, and remediated is listed before it |
-| Production jar not found | Group members include predisclosure, remediated, and validated in that order |
-| 401 / 403 from packages.redhat.com | Production username format (`orgId\|name`) and token on **each** proxy |
-| Artifact not cached | Hit the group once from Maven; confirm each proxy Remote Storage URL ends with the correct tier |
-| CI still hits packages.redhat.com | Client still lists the Lightwell URL instead of the Nexus group |
+| Validated jar not found through `acmebank_java_repo` | Org group includes `lightwell-java`; that group includes `lightwell-java-validated`, with remediated listed before it |
+| Non-`.rhlw` / Central jar not found | `maven-central` is a member of `acmebank_java_repo` and listed **after** `lightwell-java` |
+| CI still hits packages.redhat.com | Client still lists the Lightwell URL instead of `acmebank_java_repo` |
 | Demo auth required by UI | Placeholder credentials + smoke-test before presenting |
 | Copy says the S3 link has expired | Lightwell returned a cached redirect. The proxy stays online; re-run `scripts/copy-sample.sh nexus` later |
 | Proxy is offline after one failed fetch | Re-run `scripts/setup-nexus.sh` or recreate the proxy with auto-block off |

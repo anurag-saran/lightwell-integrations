@@ -28,12 +28,19 @@ That password is only for this local demo. Do not reuse it on a shared server.
 
 | | Address | What to open |
 |---|---|---|
-| Artifactory | http://127.0.0.1:8082/ui/ | Repository `lightwell-java` |
-| Nexus | http://127.0.0.1:8083/ | Repository `lightwell-java` |
+| Artifactory | http://127.0.0.1:8082/ui/ | Repository `acmebank_java_repo` (includes `lightwell-java`) |
+| Nexus | http://127.0.0.1:8083/ | Repository `acmebank_java_repo` (includes `lightwell-java`) |
 
-`lightwell-java` is the URL Maven uses. It searches `lightwell-java-remediated`, then
-`lightwell-java-validated`. Python wheels, if you need them, are in
-`lightwell-python-validated`.
+`acmebank_java_repo` is the URL Maven uses (the existing org virtual/group).
+**Resolve order** (first match wins):
+
+1. `lightwell-java-remediated`
+2. `lightwell-java-validated`
+3. `maven-central` (lowest — non-`.rhlw` deps still resolve)
+
+`lightwell-java` is the dedicated Lightwell virtual that holds members 1–2; it is
+listed ahead of `maven-central` inside `acmebank_java_repo`. Python wheels, if you
+need them, are in `lightwell-python-validated`.
 
 The script copies the small public catalog. If one file says the S3 link has expired,
 the other copies stay. The repositories are still created.
@@ -53,8 +60,9 @@ That library is only on the validated feed, so the search had to look past remed
 
 | Change | File | Why |
 |---|---|---|
-| `.rhlw` dependency + `lightwell-java` repository URL | Project [`samples/demo/pom.xml`](samples/demo/pom.xml) | Maven asks your Artifactory/Nexus for that version |
-| Server username/password with `<id>lightwell-java</id>` | [`samples/settings.xml`](samples/settings.xml) or `~/.m2/settings.xml` | Artifactory/Nexus login. **Not** the Lightwell token |
+| `.rhlw` dependency version | Project [`samples/demo/pom.xml`](samples/demo/pom.xml) | Asks for a Lightwell build through the org repo you already use |
+| Repository id/URL `acmebank_java_repo` | Usually **unchanged** | Admins add `lightwell-java` ahead of `maven-central` on the server |
+| Server username/password with `<id>acmebank_java_repo</id>` | [`samples/settings.xml`](samples/settings.xml) or `~/.m2/settings.xml` | Artifactory/Nexus login. **Not** the Lightwell token |
 
 [`samples/settings.xml`](samples/settings.xml) is the Artifactory login (`admin` /
 `Lightwell-demo1`). It is not a Lightwell token.
@@ -63,7 +71,7 @@ The same jar through Nexus:
 
 ```bash
 mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
-  -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
+  -Dacmebank.repo.url=http://127.0.0.1:8083/repository/acmebank_java_repo
 ```
 
 [`samples/prod/pom.xml`](samples/prod/pom.xml) resolves `snakeyaml` `1.33.0.rhlw-00001`.
@@ -71,7 +79,7 @@ Its default URL is the OpenShift Artifactory Route; for this machine pass the lo
 
 ```bash
 mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve \
-  -Dlightwell.repo.url=http://127.0.0.1:8082/artifactory/lightwell-java
+  -Dacmebank.repo.url=http://127.0.0.1:8082/artifactory/acmebank_java_repo
 ```
 
 After the production setup below, change `lightwell.version` in that file to the
@@ -108,7 +116,9 @@ that jar.
 | `lightwell-java-remediated` | Connection to the remediated feed |
 | `lightwell-java-validated` | Connection to the validated feed |
 | `lightwell-java-predisclosure` | Production only. The public demo does not have this feed |
-| `lightwell-java` | The one URL Maven uses. Artifactory calls it a virtual repository. Nexus calls it a group |
+| `lightwell-java` | Dedicated Lightwell virtual/group (remediated, then validated) |
+| `maven-central` | Remote/proxy of Maven Central — **lowest** member of `acmebank_java_repo` |
+| `acmebank_java_repo` | The URL Maven uses. Resolve order: remediated → validated → maven-central |
 | `lightwell-python-validated` | Public-demo Python wheels. Created by `setup-demo.sh` |
 
 `setup-artifactory.sh` and `setup-nexus.sh` are the scripts the two commands above

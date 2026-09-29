@@ -1,1 +1,4 @@
 .local/
+xray/.venv/
+__pycache__/
+*.egg-info/

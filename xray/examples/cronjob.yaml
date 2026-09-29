@@ -1,0 +1,35 @@
+# Kubernetes CronJob — build/push the image from xray/Dockerfile first, then
+# create a secret and apply this manifest.
+#
+#   kubectl -n lightwell create secret generic jfrog-xray \
+#     --from-literal=JFROG_URL=https://acme.jfrog.io \
+#     --from-literal=JFROG_TOKEN=***
+#   # edit image: below, then:
+#   kubectl apply -f cronjob.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: lightwell-xray-sync
+  namespace: lightwell
+spec:
+  schedule: "0 6 * * 1"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: sync
+              image: lightwell-xray-sync:1.0
+              args: ["sync", "-v"]
+              envFrom:
+                - secretRef:
+                    name: jfrog-xray
+              # Optional override of public-demo default:
+              # env:
+              #   - name: LIGHTWELL_OSV_URL
+              #     value: https://packages.redhat.com/.../osv/java/remediated/

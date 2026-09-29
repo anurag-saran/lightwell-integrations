@@ -3,26 +3,32 @@
   Public demo. Run ./scripts/setup-demo.sh (local) or
   ./scripts/setup-openshift-demo.sh (OpenShift) first.
 
-  lightwell-java searches remediated, then validated. No Lightwell token in this file.
+  Story: acmebank_java_repo is the virtual/group every team already uses.
+  Server resolve order (first match wins):
+    1. lightwell-java-remediated
+    2. lightwell-java-validated
+    3. maven-central          ← lowest; non-.rhlw deps still succeed
 
-  Beyond this pom, developers also need Maven server credentials whose <id>
-  matches lightwell-java — see samples/settings.xml (Artifactory/Nexus login,
-  not a Lightwell token). Details: OPENSHIFT.md and DEMO-LOCAL.md.
+  lightwell-java is the dedicated Lightwell virtual (members 1–2) that admins
+  add to acmebank_java_repo ahead of maven-central. Developers keep the same
+  repository id/URL and only change a dependency version to a .rhlw build.
+
+  Credentials: samples/settings.xml (id acmebank_java_repo). Not a Lightwell token.
 
   Local Artifactory (default URL below):
     mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve
 
   Local Nexus:
     mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
-      -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
+      -Dacmebank.repo.url=http://127.0.0.1:8083/repository/acmebank_java_repo
 
-  OpenShift Artifactory (this kit's Routes — replace host if yours differ):
+  OpenShift Artifactory:
     mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
-      -Dlightwell.repo.url=https://artifactory-lightwell-demo.apps.asaran.na-launch.com/artifactory/lightwell-java
+      -Dacmebank.repo.url=https://artifactory-lightwell-demo.apps.asaran.na-launch.com/artifactory/acmebank_java_repo
 
   OpenShift Nexus:
     mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
-      -Dlightwell.repo.url=https://nexus-lightwell-demo.apps.asaran.na-launch.com/repository/lightwell-java
+      -Dacmebank.repo.url=https://nexus-lightwell-demo.apps.asaran.na-launch.com/repository/acmebank_java_repo
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -35,14 +41,15 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <lightwell.repo.url>http://127.0.0.1:8082/artifactory/lightwell-java</lightwell.repo.url>
+    <acmebank.repo.url>http://127.0.0.1:8082/artifactory/acmebank_java_repo</acmebank.repo.url>
   </properties>
 
+  <!-- Same id/URL teams already use. Server owns Lightwell + Central members. -->
   <repositories>
     <repository>
-      <id>lightwell-java</id>
-      <name>Local Lightwell Java</name>
-      <url>${lightwell.repo.url}</url>
+      <id>acmebank_java_repo</id>
+      <name>Acme Bank Java (existing org virtual)</name>
+      <url>${acmebank.repo.url}</url>
       <releases>
         <enabled>true</enabled>
       </releases>
@@ -52,8 +59,22 @@
     </repository>
   </repositories>
 
+  <pluginRepositories>
+    <pluginRepository>
+      <id>acmebank_java_repo</id>
+      <name>Acme Bank Java (existing org virtual)</name>
+      <url>${acmebank.repo.url}</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
+
   <dependencies>
-    <!-- Validated only, so the virtual repository must look past remediated. -->
+    <!-- Client change for Lightwell: ask for a .rhlw version through acmebank. -->
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>

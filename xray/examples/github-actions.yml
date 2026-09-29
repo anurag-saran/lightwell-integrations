@@ -1,0 +1,31 @@
+# Copy into .github/workflows/ or run from the lightwell-integrations kit root.
+# Secrets: JFROG_TOKEN. Vars: JFROG_URL, optional JFROG_USER, LIGHTWELL_OSV_URL.
+name: Lightwell OSV → Xray
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install lightwell-xray-sync
+        run: pip install ./xray
+      - name: Sync OSV Custom Issues
+        env:
+          JFROG_URL: ${{ vars.JFROG_URL }}
+          JFROG_TOKEN: ${{ secrets.JFROG_TOKEN }}
+          JFROG_USER: ${{ vars.JFROG_USER }}
+          LIGHTWELL_OSV_URL: ${{ vars.LIGHTWELL_OSV_URL }}
+        run: lightwell-xray-sync sync -v
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: xray-sync-summary
+          path: xray-sync-summary.json

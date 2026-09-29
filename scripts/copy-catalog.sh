@@ -6,10 +6,16 @@
 # OSV advisories are a separate feed. The Maven remote cannot cache them,
 # so this script writes those JSON files under .local/integrations/osv/.
 #
-# The public demo console has two Maven repositories:
+# The public demo console has these Maven repositories:
 #   remediated -> lightwell-java-remediated
 #   validated  -> lightwell-java-validated
 #   virtual    -> lightwell-java  (remediated, then validated)
+#   central    -> maven-central   (existing org remote/proxy)
+#   org virt   -> acmebank_java_repo  (lightwell-java, then maven-central last)
+#
+# Resolve order through acmebank_java_repo: remediated → validated → maven-central.
+# acmebank_java_repo is the URL teams already use. Adding Lightwell is a server-side
+# member change; pom/settings keep id acmebank_java_repo and only bump .rhlw versions.
 #
 # Usage: ./scripts/copy-catalog.sh [artifactory|nexus|both] [predisclosure|remediated|validated|all]
 # Feed URLs come from lib-common.sh and LIGHTWELL_MODE.
@@ -484,6 +490,96 @@ PY
   fi
 }
 
+# Existing org virtual/group everyone already points Maven at. After Lightwell is
+# wired, members are lightwell-java (first) then maven-central (last) so ordinary
+# Central deps still resolve.
+ensure_artifactory_acmebank() {
+  local pass ui get http
+  pass="$(artifactory_pass)"
+  ui="$(integrations_artifactory_base)/artifactory/ui/admin/repositories"
+  ensure_artifactory_remote "maven-central" "https://repo1.maven.org/maven2/" || return 1
+  python3 - <<'PY' >"$STATE/artifactory-acmebank.json"
+import json
+print(json.dumps({
+    "type": "virtualRepoConfig",
+    "general": {"repoKey": "acmebank_java_repo"},
+    "basic": {
+        "layout": "maven-2-default",
+        "includesPattern": "**/*",
+        "selectedRepositories": [
+            {"repoName": "lightwell-java", "type": "virtual"},
+            {"repoName": "maven-central", "type": "remote"},
+        ],
+    },
+    "advanced": {
+        "propertySets": [],
+        "blackedOut": False,
+        "allowContentBrowsing": False,
+        "signedUrlTtl": 90,
+    },
+    "typeSpecific": {
+        "repoType": "Maven",
+        "forceMavenAuthentication": False,
+    },
+}))
+PY
+  get=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 \
+    -u "${USER_NAME}:${pass}" "${ui}/virtual/acmebank_java_repo" || true)
+  if [[ "$get" == "200" ]]; then
+    http=$(curl -sS -o "$STATE/artifactory-acmebank.out" -w '%{http_code}' --max-time 30 \
+      -u "${USER_NAME}:${pass}" -X PUT "$ui" \
+      -H "Content-Type: application/json" \
+      --data-binary @"$STATE/artifactory-acmebank.json" || true)
+    echo "Update Artifactory virtual acmebank_java_repo HTTP ${http}"
+  else
+    http=$(curl -sS -o "$STATE/artifactory-acmebank.out" -w '%{http_code}' --max-time 30 \
+      -u "${USER_NAME}:${pass}" -X POST "$ui" \
+      -H "Content-Type: application/json" \
+      --data-binary @"$STATE/artifactory-acmebank.json" || true)
+    echo "Create Artifactory virtual acmebank_java_repo HTTP ${http}"
+  fi
+  if [[ "$http" != "200" && "$http" != "201" ]]; then
+    cat "$STATE/artifactory-acmebank.out" >&2 || true
+    return 1
+  fi
+}
+
+ensure_nexus_acmebank() {
+  local pass api code
+  pass="$(nexus_pass)"
+  api="$(integrations_nexus_base)/service/rest/v1/repositories/maven"
+  ensure_nexus_proxy "maven-central" "https://repo1.maven.org/maven2/" || return 1
+  python3 - <<'PY' >"$STATE/nexus-acmebank.json"
+import json
+print(json.dumps({
+    "name": "acmebank_java_repo",
+    "online": True,
+    "storage": {"blobStoreName": "default", "strictContentTypeValidation": True},
+    "group": {"memberNames": ["lightwell-java", "maven-central"]},
+    "maven": {"versionPolicy": "RELEASE", "layoutPolicy": "STRICT", "contentDisposition": "INLINE"},
+}))
+PY
+  code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 \
+    -u "${USER_NAME}:${pass}" "${api}/group/acmebank_java_repo" || true)
+  if [[ "$code" == "200" ]]; then
+    code=$(curl -sS -o "$STATE/nexus-acmebank.out" -w '%{http_code}' --max-time 30 \
+      -u "${USER_NAME}:${pass}" -X PUT "${api}/group/acmebank_java_repo" \
+      -H "Content-Type: application/json" \
+      --data-binary @"$STATE/nexus-acmebank.json" || true)
+    echo "Update Nexus group acmebank_java_repo HTTP ${code}"
+  else
+    code=$(curl -sS -o "$STATE/nexus-acmebank.out" -w '%{http_code}' --max-time 30 \
+      -u "${USER_NAME}:${pass}" -X POST "${api}/group" \
+      -H "Content-Type: application/json" \
+      --data-binary @"$STATE/nexus-acmebank.json" || true)
+    echo "Create Nexus group acmebank_java_repo HTTP ${code}"
+  fi
+  if [[ "$code" != "200" && "$code" != "201" && "$code" != "204" ]]; then
+    cat "$STATE/nexus-acmebank.out" >&2 || true
+    return 1
+  fi
+}
+
 if [[ "${LIGHTWELL_MODE:-demo}" == "prod" ]]; then
   export LIGHTWELL_JAVA_MEMBERS="lightwell-java-predisclosure,lightwell-java-remediated,lightwell-java-validated"
 else
@@ -499,9 +595,11 @@ if [[ "$TIER" == "all" ]]; then
   copy_tier validated
   if [[ "$TARGET" == "artifactory" || "$TARGET" == "both" ]]; then
     ensure_artifactory_virtual || FAILED=$((FAILED + 1))
+    ensure_artifactory_acmebank || FAILED=$((FAILED + 1))
   fi
   if [[ "$TARGET" == "nexus" || "$TARGET" == "both" ]]; then
     ensure_nexus_group || FAILED=$((FAILED + 1))
+    ensure_nexus_acmebank || FAILED=$((FAILED + 1))
   fi
 else
   copy_tier "$TIER"

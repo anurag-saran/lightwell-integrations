@@ -47,7 +47,7 @@ mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve
 
 ```bash
 mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
-  -Dlightwell.repo.url=http://127.0.0.1:8083/repository/lightwell-java
+  -Dacmebank.repo.url=http://127.0.0.1:8083/repository/acmebank_java_repo
 ```
 
 Step-by-step, including what each repository name means: [`DEMO-LOCAL.md`](DEMO-LOCAL.md).
@@ -56,29 +56,47 @@ Step-by-step, including what each repository name means: [`DEMO-LOCAL.md`](DEMO-
 
 ```bash
 mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
-  -Dlightwell.repo.url=https://artifactory-lightwell-demo.apps.asaran.na-launch.com/artifactory/lightwell-java
+  -Dacmebank.repo.url=https://artifactory-lightwell-demo.apps.asaran.na-launch.com/artifactory/acmebank_java_repo
 ```
 
-Developers change more than `pom.xml`: they also need Maven `settings.xml` credentials
-for Artifactory/Nexus (id `lightwell-java`), and on OpenShift a JVM that trusts the
-router cert. Sample pom, settings, and smoke tests: [`OPENSHIFT.md`](OPENSHIFT.md).
+Developers keep the existing org repository id `acmebank_java_repo` in
+`settings.xml` / `pom.xml` and mainly change the dependency to a `.rhlw` version.
+On OpenShift the JVM must also trust the router cert. Details:
+[`OPENSHIFT.md`](OPENSHIFT.md).
 
-**GitLab on OpenShift** (plugin demo that opens remediation MRs):
+**JFrog Xray sync tool** (keep Lightwell OSV Custom Issues up to date on a schedule):
+
+Guide: [`XRAY.md`](XRAY.md). Package: [`xray/`](xray/) (`pip install ./xray` →
+`lightwell-xray-sync sync`, or build `xray/Dockerfile`).
+
+**GitHub plugin** (customer setup — GitHub.com or GHES with Actions):
+
+Guide: [`GITHUB.md`](GITHUB.md). Plugin repo:
+[lightwell-github-plugin-demo](https://github.com/anurag-saran/lightwell-github-plugin-demo).
+
+**GitLab plugin** (customer setup — any GitLab SaaS or self-managed):
+
+Guide: [`GITLAB.md`](GITLAB.md). Plugin repo:
+[lightwell-gitlab-plugin-demo](https://github.com/anurag-saran/lightwell-gitlab-plugin-demo).
+
+**GitLab on OpenShift** (this kit’s demo cluster):
 
 ```bash
 ./scripts/setup-openshift-gitlab.sh
 ```
 
-Guide: [`GITLAB-OPENSHIFT.md`](GITLAB-OPENSHIFT.md). Plugin repo:
-[lightwell-gitlab-plugin-demo](https://github.com/anurag-saran/lightwell-gitlab-plugin-demo)
-(create/push when ready; sources live alongside this kit).
+Guide: [`GITLAB-OPENSHIFT.md`](GITLAB-OPENSHIFT.md).
 
 | Guide | When you need it |
 |---|---|
 | [`DEMO-LOCAL.md`](DEMO-LOCAL.md) | You are running Artifactory and Nexus on this machine |
 | [`OPENSHIFT.md`](OPENSHIFT.md) | You are running Artifactory and Nexus on OpenShift (public demo); includes developer laptop changes and smoke tests |
-| [`GITLAB-OPENSHIFT.md`](GITLAB-OPENSHIFT.md) | GitLab CE + Runner on OpenShift for the Lightwell GitLab plugin demo |
+| [`GITHUB.md`](GITHUB.md) | **Customer setup** for the Lightwell GitHub plugin (GitHub.com or GHES) |
+| [`GITLAB.md`](GITLAB.md) | **Customer setup** for the Lightwell GitLab plugin (any GitLab) |
+| [`GITLAB-OPENSHIFT.md`](GITLAB-OPENSHIFT.md) | Deploy GitLab CE + Runner on this OpenShift kit |
 | [`ARTIFACTORY.md`](ARTIFACTORY.md) | You already have an Artifactory server and want the click path |
+| [`XRAY.md`](XRAY.md) | **Customer tool**: sync Lightwell OSV → Xray Custom Issues (schedule) |
+| [`OSV-XRAY-DESIGN.md`](OSV-XRAY-DESIGN.md) | **Technical design**: OSV → Xray API mapping, and how that meets Artifactory |
 | [`NEXUS.md`](NEXUS.md) | You already have a Nexus server and want the click path |
 | [`SONARQUBE.md`](SONARQUBE.md) | You already use Sonar. Skip this if you do not. |
 | [`OSV-DEMO-GAPS.md`](OSV-DEMO-GAPS.md) | Eng: public-demo OSV vs Maven mismatches (clickable URLs) |
@@ -90,14 +108,16 @@ Guide: [`GITLAB-OPENSHIFT.md`](GITLAB-OPENSHIFT.md). Plugin repo:
 | **`.rhlw-00001`** | The end of a Lightwell version, for example `2.11.0.rhlw-00001`. You type that version into `pom.xml` when you want that build. |
 | **Remediated / Validated / Predisclosure** | Three Lightwell feeds. Remediated and Validated are on the public demo. Predisclosure exists only in production. |
 | **Remote / proxy** | One connection from your server to one feed. Artifactory calls it a remote repository. Nexus calls it a Maven2 proxy. |
-| **Virtual / group** | One URL your build uses. It searches the feeds in order. The name in this kit is `lightwell-java`. |
+| **Virtual / group** | One URL your build uses. It searches members in order. This kit’s org URL is `acmebank_java_repo` (remediated → validated → **maven-central**). The Lightwell-only virtual is `lightwell-java`. |
 | **Cache** | The local copy. The first request downloads the jar from Lightwell. The next request for that same file stays on your server. |
 
 ## What this is / is not
 
-**Is:** one URL (`lightwell-java`) so Maven resolves a `.rhlw` version the same way
-it resolves Maven Central. The Lightwell user and token live on Artifactory or Nexus,
-once, not in each build.
+**Is:** one org URL (`acmebank_java_repo`) so Maven resolves a `.rhlw` version the
+same way it already resolves Maven Central — after admins add the Lightwell
+virtual (`lightwell-java`) **ahead of** `maven-central`. Non-`.rhlw` deps still
+fall through to Central. The Lightwell user and token live on Artifactory or
+Nexus, once, not in each build.
 
 **Is not:** a grade of the upgrade. Artifactory/Nexus make a remediated build
 *available*. SonarQube still owns app-code quality. Neither tells you which of your
@@ -117,9 +137,11 @@ tests a dependency bump owes.
 | **Production** | `https://packages.redhat.com/lightwell/java/remediated/` (also `validated/`, `predisclosure/`) | Service account `XXXXXXX\|service-account-name` + token |
 | **Public demo** | `https://packages.redhat.com/lightwell/public-lightwell-demo/java/remediated/` | None — leave blank, or a placeholder if the UI rejects empty fields. **Smoke-test before a live demo.** |
 
-Most production environments layer tiers in a virtual/group repository, ordered
-**Predisclosure → Remediated → Validated**. Lightwell supplies the tiers; you own the
-combined view.
+Most production environments layer tiers in a virtual/group repository. This kit’s
+org virtual (`acmebank_java_repo`) is ordered **Remediated → Validated → Maven
+Central** (production can insert Predisclosure first inside `lightwell-java`).
+Lightwell supplies the tiers; you own the combined view, with Central last so
+existing customer builds keep succeeding.
 
 ## How it stays in sync
 
@@ -139,7 +161,8 @@ you want a newer build. You do not recreate `lightwell-java` to pick it up.
 
 ## What success looks like
 
-1. Artifactory and Nexus each show a repository named `lightwell-java`.
-2. `mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve` prints `BUILD SUCCESS`.
-3. The servers stored the jar. They did not decide whether your application should adopt it. That grade is upgrade-delta, a separate project.
-4. SonarQube, if you start it, still only checks your application code. See [`SONARQUBE.md`](SONARQUBE.md).
+1. Artifactory and Nexus each show `lightwell-java`, `maven-central`, and `acmebank_java_repo`.
+2. `acmebank_java_repo` members are `lightwell-java` then `maven-central` (Central last).
+3. `mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve` prints `BUILD SUCCESS`.
+4. The servers stored the jar. They did not decide whether your application should adopt it. That grade is upgrade-delta, a separate project.
+5. SonarQube, if you start it, still only checks your application code. See [`SONARQUBE.md`](SONARQUBE.md).

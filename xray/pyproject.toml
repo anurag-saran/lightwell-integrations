@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lightwell-xray-sync"
+version = "1.0.0"
+description = "Sync Red Hat Lightwell OSV advisories into JFrog Xray Custom Issues"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+dependencies = [
+  "requests>=2.31.0,<3",
+]
+
+[project.scripts]
+lightwell-xray-sync = "lightwell_xray_sync.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

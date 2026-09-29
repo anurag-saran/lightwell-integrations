@@ -55,5 +55,5 @@ echo
 echo "Artifactory UI:  http://127.0.0.1:${ARTIFACTORY_UI_PORT:-8082}/ui/"
 echo "Nexus UI:        http://127.0.0.1:${NEXUS_HOST_PORT:-8083}/"
 echo "Login:           admin / ${DEMO_PASSWORD:-Lightwell-demo1}"
-echo "Java client:     lightwell-java  (predisclosure, then remediated, then validated)"
+echo "Java client:     acmebank_java_repo  (remediated → validated → maven-central; prod lightwell-java adds predisclosure first)"
 echo "The production catalog was not copied. The first request for a jar stores that jar."

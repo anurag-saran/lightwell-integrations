@@ -4,20 +4,30 @@
   This is the repository server login, not the Lightwell token.
   Password is demo-only. Do not reuse it on a shared server.
 
-  The <server><id> must match the <repository><id> in the pom (lightwell-java).
-  Copy this <servers> block into ~/.m2/settings.xml for day-to-day use, or pass -s.
+  Teams already use repository id acmebank_java_repo (the org virtual/group).
+  On the server that virtual searches, in order:
+    1. lightwell-java-remediated
+    2. lightwell-java-validated
+    3. maven-central   (lowest — so normal Central deps still resolve)
+
+  Lightwell is a server-side member change — this <server> id does not change.
+  Copy the <servers> block into ~/.m2/settings.xml, or pass -s.
 
   Local:
     mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve
 
   OpenShift Artifactory:
     mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
-      -Dlightwell.repo.url=https://artifactory-lightwell-demo.apps.asaran.na-launch.com/artifactory/lightwell-java
+      -Dacmebank.repo.url=https://artifactory-lightwell-demo.apps.asaran.na-launch.com/artifactory/acmebank_java_repo
+
+  OpenShift Nexus:
+    mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
+      -Dacmebank.repo.url=https://nexus-lightwell-demo.apps.asaran.na-launch.com/repository/acmebank_java_repo
 -->
 <settings>
   <servers>
     <server>
-      <id>lightwell-java</id>
+      <id>acmebank_java_repo</id>
       <username>admin</username>
       <password>Lightwell-demo1</password>
     </server>

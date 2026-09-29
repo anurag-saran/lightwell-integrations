@@ -1,0 +1,28 @@
+# Paste into a security/ops GitLab project (or include from the kit).
+# Schedule weekly under CI/CD → Schedules. Mask JFROG_TOKEN.
+#
+# Variables:
+#   JFROG_URL              https://acme.jfrog.io
+#   JFROG_TOKEN            (masked) Manage Xray Metadata
+#   JFROG_USER             optional Basic auth user
+#   LIGHTWELL_OSV_URL      optional; defaults to public-demo OSV index
+
+stages:
+  - sync
+
+lightwell-osv-to-xray:
+  stage: sync
+  image: python:3.12-bookworm
+  variables:
+    PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "web"
+  script:
+    - pip install ./xray
+    - lightwell-xray-sync sync -v
+  artifacts:
+    when: always
+    paths:
+      - xray-sync-summary.json
+    expire_in: 30 days

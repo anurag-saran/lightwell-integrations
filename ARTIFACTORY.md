@@ -5,7 +5,8 @@ Running Artifactory on this machine? Stop here and follow [`DEMO-LOCAL.md`](DEMO
 for an Artifactory server you already administer.
 
 After these steps, Artifactory can fetch a Lightwell jar and store it. Maven uses the
-**virtual** repository `lightwell-java`, not packages.redhat.com.
+**existing org virtual** repository `acmebank_java_repo` (which includes the Lightwell
+virtual `lightwell-java`), not packages.redhat.com.
 
 A **remote** is one connection from Artifactory to one Lightwell feed. The **cache** is
 the local copy made the first time something requests a file. The **virtual** repository
@@ -38,8 +39,12 @@ Local Podman start: [`DEMO-LOCAL.md`](DEMO-LOCAL.md).
 | `lightwell-java-remediated` | Remote (Maven) | Create | Create |
 | `lightwell-java-validated` | Remote (Maven) | Create | Create |
 | `lightwell-java` | Virtual (Maven) | Members: remediated, then validated | Members: predisclosure, then remediated, then validated |
+| `maven-central` | Remote (Maven) | Create (or reuse your existing Central remote) | Same |
+| `acmebank_java_repo` | Virtual (Maven) | Members: `lightwell-java`, then **`maven-central` (last)** | Same |
 
-Maven and CI point only at `lightwell-java`.
+Maven and CI keep pointing at `acmebank_java_repo`. Admins add `lightwell-java`
+**ahead of** `maven-central` so `.rhlw` builds win when present and ordinary
+Central deps still resolve. Developers mainly change dependency versions to `.rhlw`.
 
 ---
 
@@ -99,7 +104,7 @@ Do **not** create `lightwell-java-predisclosure` for the public demo.
 
 Use the same service-account user and token on each remote.
 
-### 3. Create the virtual repository
+### 3. Create the Lightwell virtual repository
 
 1. **Create a Repository** → **Virtual**.
 2. Package type: **Maven**.
@@ -113,24 +118,35 @@ Use the same service-account user and token on each remote.
 
 5. Save.
 
-Maven uses this one URL. Search stops at the first remote that has the file. That is why
-a library present in both remediated and validated comes from remediated when remediated
-is listed first.
+### 4. Add Lightwell to the existing org virtual
 
-### 4. Local Podman note
+If your teams already use a virtual such as `acmebank_java_repo`:
+
+1. Ensure a **Maven Central** remote exists (this kit uses key `maven-central` →
+   `https://repo1.maven.org/maven2/`).
+2. Open the org virtual (or create it) with package type **Maven**.
+3. Member list, top searched first:
+   1. `lightwell-java`
+   2. `maven-central` (**last** — so non-`.rhlw` deps and plugins still succeed)
+4. Save.
+
+Maven keeps using `acmebank_java_repo`. Effective resolve order is remediated →
+validated → Maven Central. Search stops at the first member that has the file.
+
+### 5. Local Podman note
 
 Artifactory OSS blocks creating remotes over the public repository REST API (Pro-only).
-`./scripts/setup-demo.sh` and `./scripts/setup-prod.sh` create the remotes and the virtual
-through the console API, including Bypass HEAD Requests and Missed Retrieval Cache Period
-`600`. If a lower-level script waits and prints clicks, finish those remotes in the UI,
-then re-run the script.
+`./scripts/setup-demo.sh` and `./scripts/setup-prod.sh` create the remotes, the
+Lightwell virtual, and `acmebank_java_repo` through the console API, including Bypass
+HEAD Requests and Missed Retrieval Cache Period `600`. If a lower-level script waits
+and prints clicks, finish those remotes in the UI, then re-run the script.
 
 ---
 
 ## Verify
 
-Point Maven at the **virtual** repository, not at a single remote and not at
-packages.redhat.com.
+Point Maven at the **org virtual** repository (`acmebank_java_repo`), not at a single
+remote and not at packages.redhat.com.
 
 On the local demo (Artifactory at `http://127.0.0.1:8082`):
 
@@ -138,13 +154,13 @@ On the local demo (Artifactory at `http://127.0.0.1:8082`):
 mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve
 ```
 
-`BUILD SUCCESS` means `lightwell-java` resolved a validated library
-(`commons-io` `2.11.0.rhlw-00001`), so the virtual had to look past remediated.
-[`samples/settings.xml`](samples/settings.xml) is the Artifactory login
+`BUILD SUCCESS` means `acmebank_java_repo` → `lightwell-java` resolved a validated
+library (`commons-io` `2.11.0.rhlw-00001`), so the Lightwell virtual had to look past
+remediated. [`samples/settings.xml`](samples/settings.xml) is the Artifactory login
 (`admin` / `Lightwell-demo1`), not a Lightwell token.
 
-On a server you already run, use that server’s Artifactory URL for `lightwell-java` and
-that server’s login as Maven server id `lightwell-java`.
+On a server you already run, use that server’s Artifactory URL for `acmebank_java_repo`
+and that server’s login as Maven server id `acmebank_java_repo`.
 
 Optional single-remote check (remediated only):
 
@@ -172,11 +188,11 @@ re-running the setup script does not download the catalog.
 
 ## Point Maven at Artifactory
 
-Clients use the virtual repository:
+Clients use the existing org virtual repository:
 
-`https://<your-artifactory-host>/artifactory/lightwell-java`
+`https://<your-artifactory-host>/artifactory/acmebank_java_repo`
 
-Local demo URL: `http://127.0.0.1:8082/artifactory/lightwell-java`
+Local demo URL: `http://127.0.0.1:8082/artifactory/acmebank_java_repo`
 
 Sample builds: [`samples/demo/pom.xml`](samples/demo/pom.xml) and
 [`samples/prod/pom.xml`](samples/prod/pom.xml).
@@ -184,7 +200,7 @@ Sample builds: [`samples/demo/pom.xml`](samples/demo/pom.xml) and
 ```bash
 mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve
 mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve \
-  -Dlightwell.repo.url=http://127.0.0.1:8082/artifactory/lightwell-java
+  -Dacmebank.repo.url=http://127.0.0.1:8082/artifactory/acmebank_java_repo
 ```
 
 (`samples/prod/pom.xml` defaults to the OpenShift Artifactory Route; override as above for local.)
@@ -209,12 +225,22 @@ separate project.
 | Symptom | Check |
 |---|---|
 | Version rejected / not found | Artifactory naming policy vs `.rhlw-0000X`; confirm the GAV exists on the tier that should hold it |
-| Validated jar not found through `lightwell-java` | Virtual members include `lightwell-java-validated`, and remediated is listed before it |
+| Validated jar not found through `acmebank_java_repo` | `acmebank_java_repo` includes `lightwell-java`; that virtual includes `lightwell-java-validated`, with remediated listed before it |
+| Non-`.rhlw` / Central jar not found | `maven-central` is a member of `acmebank_java_repo` and listed **after** `lightwell-java` |
+| CI still hits packages.redhat.com | Client `settings.xml` / `pom` still lists the Lightwell URL instead of `acmebank_java_repo` |
 | Production jar not found | Virtual members include predisclosure, remediated, and validated in that order |
 | 401 / 403 from packages.redhat.com | Production service-account format and token on **each** remote; Enable Token Authentication must stay cleared |
 | Empty catalog in UI | **List Remote Artifacts** checked; fetch once so the remote caches |
-| CI still hits packages.redhat.com | Client `settings.xml` / `pom` still lists the Lightwell URL instead of `lightwell-java` |
 | Demo auth fields won’t save blank | Use any placeholder string for public-demo; smoke-test a jar fetch before presenting |
 | Jar fetch is Forbidden after a redirect | **Bypass HEAD Requests** must be checked. S3 presigned URLs reject HEAD |
 | Copy says the S3 link has expired | Lightwell returned a cached redirect. The remote is already saved; re-run `scripts/copy-sample.sh` later |
 | Script waits and prints clicks | The console API did not save a remote. Finish it in the UI, then re-run the script |
+
+---
+
+## Related: keep Xray aware of Lightwell OSV
+
+Resolving `.rhlw` jars is only half of the JFrog story. To feed **Xray Custom Issues**
+(so severity policies see Lightwell CVEs and fixed builds), run the scheduled sync tool:
+
+Guide: [`XRAY.md`](XRAY.md) — `pip install ./xray` → `lightwell-xray-sync sync`.

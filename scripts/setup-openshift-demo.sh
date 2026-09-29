@@ -155,10 +155,11 @@ echo
 echo "Artifactory UI:  ${AF}/ui/"
 echo "Nexus UI:        ${NX}/"
 echo "Login:           admin / ${DEMO_PASSWORD}"
-echo "Java client:     ${AF}/artifactory/lightwell-java"
+echo "Java client:     ${AF}/artifactory/acmebank_java_repo"
+echo "  (resolve order: remediated → validated → maven-central)"
 echo "Maven sample:"
 echo "  mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \\"
-echo "    -Dlightwell.repo.url=${AF}/artifactory/lightwell-java"
+echo "    -Dacmebank.repo.url=${AF}/artifactory/acmebank_java_repo"
 echo
 echo "Demo password is for this OpenShift demo only. Do not reuse it on a shared server."
 echo "If a pod is stuck on SCC, grant anyuid:"

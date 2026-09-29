@@ -1,11 +1,41 @@
-# GitLab on OpenShift — Lightwell plugin demo
+# GitLab on OpenShift — kit deploy (demo cluster)
 
-Deploys **GitLab CE** on OpenShift and pairs it with
-[`lightwell-gitlab-plugin-demo`](https://github.com/anurag-saran/lightwell-gitlab-plugin-demo)
-(CI that opens Lightwell remediation MRs on a GitLab copy of `payments-service`).
+Deploys **GitLab CE** on OpenShift for a live demo. For the **customer setup
+guide** (any GitLab SaaS or self-managed — Runner, PAT, plugin project, target
+app, remediate pipeline), see **[`GITLAB.md`](GITLAB.md)** first.
 
-Artifactory public-demo Routes (optional Maven resolve after merge):
-[`OPENSHIFT.md`](OPENSHIFT.md).
+Plugin sources:
+[`lightwell-gitlab-plugin-demo`](https://github.com/anurag-saran/lightwell-gitlab-plugin-demo).
+
+Artifactory / Nexus (optional Maven resolve after merge): [`OPENSHIFT.md`](OPENSHIFT.md).
+
+## This kit’s demo URLs and login
+
+| | |
+|---|---|
+| **GitLab** | https://gitlab.apps.asaran.na-launch.com |
+| **Username** | `root` |
+| **Password** | `Lightwell-demo1` |
+| **Plugin project** | https://gitlab.apps.asaran.na-launch.com/root/lightwell-gitlab-plugin-demo |
+| **Sample app** | https://gitlab.apps.asaran.na-launch.com/root/payments-service |
+| **Artifactory** | https://artifactory-lightwell-demo.apps.asaran.na-launch.com/ui/ (`admin` / `Lightwell-demo1`) |
+
+Create a Personal Access Token in GitLab (**User settings → Access tokens**:
+`api` + `write_repository`) and store it as CI variable `LIGHTWELL_GITLAB_TOKEN`
+on the plugin project (masked). Do not commit the token.
+
+### Demo flow (after GitLab + Runner are up)
+
+1. Log in to GitLab as `root` / `Lightwell-demo1`
+2. Confirm **Admin → CI/CD → Runners** shows a runner **online**
+3. Open **root/lightwell-gitlab-plugin-demo** → **CI/CD → Pipelines → Run pipeline**
+4. Run job **`remediate`**
+5. Open **root/payments-service** → **Merge requests** → MR from `lightwell/remediations`
+6. Confirm **Lightwell library updates: N available** on the project overview (README + project badge)
+7. Optional: resolve a `.rhlw` jar via  
+   `https://artifactory-lightwell-demo.apps.asaran.na-launch.com/artifactory/acmebank_java_repo`
+
+Full customer steps (any environment): [`GITLAB.md`](GITLAB.md).
 
 ## Modes
 
@@ -41,7 +71,9 @@ LIGHTWELL_GITLAB_MODE=helm ./scripts/setup-openshift-gitlab.sh
 
 Omnibus mode ships a Runner Deployment at **0 replicas** until you register a token:
 
-1. GitLab UI → **Admin** → **CI/CD** → **Runners** → create an **instance** runner → copy token  
+1. GitLab UI → **Admin** → **CI/CD** → **Runners** → **New instance runner** → copy the
+   authentication token  
+   (or create via API: `POST /api/v4/user/runners` with `runner_type=instance_type`)
 2. Register and scale up:
 
 ```bash
@@ -51,48 +83,18 @@ Omnibus mode ships a Runner Deployment at **0 replicas** until you register a to
 Confirm the runner shows **online** in the Admin runners page. Job pods use the
 Kubernetes executor in namespace `lightwell-gitlab`.
 
-## Plugin + sample app
-
-1. Create GitLab project **lightwell-gitlab-plugin-demo** (push this repo or import).
-2. Import **payments-service**:
+## Seed plugin + sample app (GitLab only — no GitHub)
 
 ```bash
-# From lightwell-gitlab-plugin-demo clone:
-./scripts/import-payments-service.sh https://<gitlab-route-host> root "$GITLAB_TOKEN"
+# PAT with api + write_repository
+# Seeds plugin + local payments-service tree onto GitLab (no GitHub remotes)
+./scripts/seed-gitlab-lightwell-projects.sh https://gitlab.apps.asaran.na-launch.com "$TOKEN"
 ```
 
-Or GitLab UI → **New project** → **Import** → Repository by URL  
-`https://github.com/anurag-saran/payments-service.git`
+Then in the plugin project set CI/CD variable `LIGHTWELL_GITLAB_TOKEN` (masked).
+Optional: `TARGET_PROJECT=root/payments-service`.
 
-3. In the plugin project → **Settings → CI/CD → Variables**:
-   - `LIGHTWELL_GITLAB_TOKEN` — PAT with `api` + `write_repository` on the app (masked)
-   - Optional: `TARGET_PROJECT=root/payments-service`, `DRY_RUN=true`
-
-4. **CI/CD → Run pipeline** → run job **remediate** (or set a weekly schedule).
-
-5. Open the MR on `payments-service` (`lightwell/remediations`). Badge branch:
-   `lightwell/badge`.
-
-## Demo checklist
-
-1. Open GitLab Route → log in as `root`  
-2. Runner online  
-3. Plugin pipeline **remediate** succeeds  
-4. MR appears with CVE/CVSS table  
-5. Optional: resolve a bumped `.rhlw` jar through Artifactory  
-   `https://artifactory-lightwell-demo.apps.<domain>/artifactory/lightwell-java`
-
-## URLs (this kit’s cluster pattern)
-
-| Service | URL pattern |
-|---|---|
-| GitLab | `https://gitlab.apps.asaran.na-launch.com` (or Route host from `oc -n lightwell-gitlab get route`) |
-| Artifactory | `https://artifactory-lightwell-demo.apps.asaran.na-launch.com/ui/` |
-
-```bash
-oc -n lightwell-gitlab get pods,route
-oc -n lightwell-gitlab logs deploy/gitlab --tail=80
-```
+Customer guide (any GitLab, no GitHub): [`GITLAB.md`](GITLAB.md).
 
 ## Stop / free memory
 

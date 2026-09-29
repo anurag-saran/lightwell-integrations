@@ -2,7 +2,8 @@
 # Public demo on the local Podman Artifactory and Nexus. No Lightwell credentials.
 #
 # Creates lightwell-java-remediated, lightwell-java-validated, the lightwell-java
-# virtual/group (remediated, then validated), and lightwell-python-validated,
+# virtual/group (remediated, then validated), maven-central, acmebank_java_repo
+# (org virtual: lightwell-java then maven-central), and lightwell-python-validated,
 # then copies the small public catalogs.
 set -euo pipefail
 
@@ -31,7 +32,7 @@ echo
 echo "Artifactory UI:  http://127.0.0.1:${ARTIFACTORY_UI_PORT:-8082}/ui/"
 echo "Nexus UI:        http://127.0.0.1:${NEXUS_HOST_PORT:-8083}/"
 echo "Login:           admin / ${DEMO_PASSWORD:-Lightwell-demo1}"
-echo "Java client:     lightwell-java  (remediated, then validated)"
+echo "Java client:     acmebank_java_repo  (remediated → validated → maven-central)"
 echo "Python:          lightwell-python-validated"
 echo "Demo password is local-only. Do not reuse it on a shared server."
 

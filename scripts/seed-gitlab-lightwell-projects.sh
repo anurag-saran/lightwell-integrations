@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# After GitLab is up, print the exact commands to seed plugin + payments-service.
-# Does not require oc (cluster may be remote); needs GitLab URL + token for import.
+# Seed plugin + target app onto GitLab from local trees only (no GitHub import).
 #
 # Usage:
 #   ./scripts/seed-gitlab-lightwell-projects.sh https://gitlab.apps.example.com "$TOKEN"
@@ -9,22 +8,23 @@ set -euo pipefail
 GITLAB_URL="${1:?GitLab base URL required (https://gitlab....)}"
 TOKEN="${2:?GitLab personal access token with api + write_repository}"
 PLUGIN_SRC="${LIGHTWELL_GITLAB_PLUGIN_SRC:-$HOME/projects/lightwell-gitlab-plugin-demo}"
+APP_SRC="${LIGHTWELL_APP_SRC:-$HOME/projects/payments-service}"
 NS="${GITLAB_NAMESPACE:-root}"
 
 GITLAB_URL="${GITLAB_URL%/}"
 
-echo "== Seed Lightwell GitLab demo projects =="
+echo "== Seed Lightwell GitLab demo projects (GitLab-only; no GitHub) =="
 echo "GitLab: $GITLAB_URL"
 echo
 
-if [[ ! -d "$PLUGIN_SRC/.git" && ! -f "$PLUGIN_SRC/scripts/import-payments-service.sh" ]]; then
+if [[ ! -f "$PLUGIN_SRC/scripts/seed-gitlab-app.sh" ]]; then
   echo "Plugin sources not found at $PLUGIN_SRC"
-  echo "Clone or set LIGHTWELL_GITLAB_PLUGIN_SRC to lightwell-gitlab-plugin-demo."
+  echo "Set LIGHTWELL_GITLAB_PLUGIN_SRC to lightwell-gitlab-plugin-demo."
   exit 1
 fi
 
-echo "1) Import payments-service"
-( cd "$PLUGIN_SRC" && ./scripts/import-payments-service.sh "$GITLAB_URL" "$NS" "$TOKEN" )
+echo "1) Seed payments-service from local tree (strips .git / GitHub README)"
+( cd "$PLUGIN_SRC" && ./scripts/seed-gitlab-app.sh "$GITLAB_URL" "$NS" "$TOKEN" "$APP_SRC" )
 
 echo
 echo "2) Push lightwell-gitlab-plugin-demo to GitLab"
@@ -35,7 +35,6 @@ cd "$WORKDIR/plugin"
 git init -b main
 git add .
 git -c user.name=lightwell-bot -c user.email=lightwell-bot@example.com commit -m "Lightwell GitLab plugin demo"
-# Create project via API
 API="$GITLAB_URL/api/v4"
 HOSTPATH="${GITLAB_URL#https://}"
 HOSTPATH="${HOSTPATH#http://}"
@@ -44,6 +43,10 @@ NS_ID="$(curl -fsS --header "PRIVATE-TOKEN: $TOKEN" "$API/namespaces?search=${NS
 curl -fsS --header "PRIVATE-TOKEN: $TOKEN" --header "Content-Type: application/json" \
   --data "{\"name\":\"lightwell-gitlab-plugin-demo\",\"path\":\"lightwell-gitlab-plugin-demo\",\"namespace_id\":${NS_ID},\"visibility\":\"private\",\"initialize_with_readme\":false}" \
   "$API/projects" >/dev/null 2>&1 || true
+# Unprotect main if needed for force push
+curl -fsS -X DELETE --header "PRIVATE-TOKEN: $TOKEN" \
+  "$API/projects/$(python3 -c "import urllib.parse; print(urllib.parse.quote('${NS}/lightwell-gitlab-plugin-demo', safe=''))")/protected_branches/main" \
+  >/dev/null 2>&1 || true
 git remote add origin "https://oauth2:${TOKEN}@${HOSTPATH}/${NS}/lightwell-gitlab-plugin-demo.git"
 git push -u origin main --force
 
@@ -53,4 +56,4 @@ echo "   Settings → CI/CD → Variables → LIGHTWELL_GITLAB_TOKEN = <same tok
 echo "   Optional: TARGET_PROJECT=${NS}/payments-service"
 echo "   CI/CD → Run pipeline → run job remediate"
 echo
-echo "Done."
+echo "Done. Projects are GitLab-native (no GitHub remotes or README links)."

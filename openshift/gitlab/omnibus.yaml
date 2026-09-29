@@ -62,14 +62,14 @@ spec:
                   key: password
             # Patched by setup-openshift-gitlab.sh to the admitted Route URL.
             - name: EXTERNAL_URL
-              value: "https://gitlab-lightwell-gitlab.apps.asaran.na-launch.com"
+              value: "https://gitlab.apps.asaran.na-launch.com"
             - name: GITLAB_OMNIBUS_CONFIG
               value: |
+                external_url 'https://gitlab.apps.asaran.na-launch.com'
                 nginx['listen_port'] = 80
                 nginx['listen_https'] = false
                 letsencrypt['enable'] = false
                 prometheus_monitoring['enable'] = false
-                grafana['enable'] = false
                 alertmanager['enable'] = false
                 puma['worker_processes'] = 2
           resources:
@@ -161,11 +161,14 @@ metadata:
   namespace: lightwell-gitlab
 rules:
   - apiGroups: [""]
-    resources: ["pods", "pods/log", "pods/exec", "secrets", "configmaps"]
-    verbs: ["get", "list", "watch", "create", "patch", "delete"]
+    resources: ["pods", "pods/log", "pods/exec", "pods/attach", "secrets", "configmaps", "services"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
