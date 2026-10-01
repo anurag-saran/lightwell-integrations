@@ -2,12 +2,12 @@
 
 Deploys **GitLab CE** on OpenShift for a live demo. For the **customer setup
 guide** (any GitLab SaaS or self-managed — Runner, PAT, plugin project, target
-app, remediate pipeline), see **[`GITLAB.md`](GITLAB.md)** first.
+app, remediate pipeline), see **[`README.md`](README.md)** first.
 
 Plugin sources:
 [`lightwell-gitlab-plugin-demo`](https://github.com/anurag-saran/lightwell-gitlab-plugin-demo).
 
-Artifactory / Nexus (optional Maven resolve after merge): [`OPENSHIFT.md`](OPENSHIFT.md).
+Artifactory / Nexus (optional Maven resolve after merge): [`../openshift/README.md`](../openshift/README.md).
 
 ## This kit’s demo URLs and login
 
@@ -35,14 +35,14 @@ on the plugin project (masked). Do not commit the token.
 7. Optional: resolve a `.rhlw` jar via  
    `https://artifactory-lightwell-demo.apps.asaran.na-launch.com/artifactory/acmebank_java_repo`
 
-Full customer steps (any environment): [`GITLAB.md`](GITLAB.md).
+Full customer steps (any environment): [`README.md`](README.md).
 
 ## Modes
 
 | Mode | Env | When to use |
 |---|---|---|
 | **omnibus** (default) | `LIGHTWELL_GITLAB_MODE=omnibus` | Single-node / SNO demos — one `gitlab/gitlab-ce` pod + Route |
-| **helm** | `LIGHTWELL_GITLAB_MODE=helm` | Larger clusters — official `gitlab/gitlab` chart ([`openshift/gitlab/values-demo.yaml`](openshift/gitlab/values-demo.yaml)) |
+| **helm** | `LIGHTWELL_GITLAB_MODE=helm` | Larger clusters — official `gitlab/gitlab` chart ([`openshift/values-demo.yaml`](openshift/values-demo.yaml)) |
 
 ## Before you start
 
@@ -53,10 +53,10 @@ Full customer steps (any environment): [`GITLAB.md`](GITLAB.md).
 ## One command (omnibus)
 
 ```bash
-./scripts/setup-openshift-gitlab.sh
+./gitlab/setup-openshift.sh
 ```
 
-That applies [`openshift/gitlab/omnibus.yaml`](openshift/gitlab/omnibus.yaml), waits for the
+That applies [`openshift/omnibus.yaml`](openshift/omnibus.yaml), waits for the
 Deployment, and prints the Route URL. First boot often takes **10–20 minutes**.
 
 Login: `root` / `Lightwell-demo1` (override with `DEMO_PASSWORD`).
@@ -64,7 +64,7 @@ Login: `root` / `Lightwell-demo1` (override with `DEMO_PASSWORD`).
 Helm instead:
 
 ```bash
-LIGHTWELL_GITLAB_MODE=helm ./scripts/setup-openshift-gitlab.sh
+LIGHTWELL_GITLAB_MODE=helm ./gitlab/setup-openshift.sh
 ```
 
 ## Runner
@@ -77,7 +77,7 @@ Omnibus mode ships a Runner Deployment at **0 replicas** until you register a to
 2. Register and scale up:
 
 ```bash
-./scripts/register-openshift-gitlab-runner.sh <runner-authentication-token>
+./gitlab/register-runner.sh <runner-authentication-token>
 ```
 
 Confirm the runner shows **online** in the Admin runners page. Job pods use the
@@ -88,13 +88,13 @@ Kubernetes executor in namespace `lightwell-gitlab`.
 ```bash
 # PAT with api + write_repository
 # Seeds plugin + local payments-service tree onto GitLab (no GitHub remotes)
-./scripts/seed-gitlab-lightwell-projects.sh https://gitlab.apps.asaran.na-launch.com "$TOKEN"
+./gitlab/seed-projects.sh https://gitlab.apps.asaran.na-launch.com "$TOKEN"
 ```
 
 Then in the plugin project set CI/CD variable `LIGHTWELL_GITLAB_TOKEN` (masked).
 Optional: `TARGET_PROJECT=root/payments-service`.
 
-Customer guide (any GitLab, no GitHub): [`GITLAB.md`](GITLAB.md).
+Customer guide (any GitLab, no GitHub): [`README.md`](README.md).
 
 ## Stop / free memory
 

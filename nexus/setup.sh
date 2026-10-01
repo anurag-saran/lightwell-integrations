@@ -3,8 +3,8 @@
 # UI: http://127.0.0.1:8083  (host 8083 -> container 8081, so Artifactory can keep 8081/8082)
 set -euo pipefail
 
-# shellcheck source=lib-common.sh
-source "$(dirname "$0")/lib-common.sh"
+# shellcheck source=../scripts/lib-common.sh
+source "$(dirname "$0")/../scripts/lib-common.sh"
 integrations_require_podman
 
 NAME="${NEXUS_CONTAINER:-lightwell-nexus}"
@@ -152,7 +152,7 @@ export LIGHTWELL_COPY_PASSWORD="$ADMIN_PASS"
 if [[ "${LIGHTWELL_SKIP_SAMPLE:-}" == "1" ]]; then
   echo "Skipping the sample jar copy."
 else
-  "$(dirname "$0")/copy-sample.sh" nexus
+  "$(dirname "$0")/../scripts/copy-sample.sh" nexus
 fi
 
 echo

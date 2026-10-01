@@ -3,7 +3,7 @@
 This guide is for **on-prem / self-managed GitLab** (or GitLab.com). It does **not**
 require GitHub. The plugin runs as GitLab CI and opens **merge requests on GitLab**.
 
-OpenShift kit (our demo cluster): [`GITLAB-OPENSHIFT.md`](GITLAB-OPENSHIFT.md).
+OpenShift kit (our demo cluster): [`openshift.md`](openshift.md).
 
 Plugin project sources (copy onto your GitLab; no runtime call to GitHub):
 `lightwell-gitlab-plugin-demo` (shipped with this kit or provided as a zip/bundle).
@@ -18,7 +18,7 @@ Plugin project sources (copy onto your GitLab; no runtime call to GitHub):
 | Maintainer on the **plugin** project and **target app** project | CI variables + MRs |
 
 Optional: Artifactory or Nexus already wired to Lightwell
-([`ARTIFACTORY.md`](ARTIFACTORY.md) / [`NEXUS.md`](NEXUS.md)) so after you merge
+([`../artifactory/README.md`](../artifactory/README.md) / [`../nexus/README.md`](../nexus/README.md)) so after you merge
 the MR, Maven resolves `.rhlw` versions through your org virtual
 (`acmebank_java_repo` in this kit).
 
@@ -134,7 +134,7 @@ Point Maven at your **existing org virtual** (this kit: `acmebank_java_repo`):
 2. Lightwell validated  
 3. Maven Central (lowest)
 
-See [`ARTIFACTORY.md`](ARTIFACTORY.md) / [`NEXUS.md`](NEXUS.md).
+See [`../artifactory/README.md`](../artifactory/README.md) / [`../nexus/README.md`](../nexus/README.md).
 
 ## Demo checklist
 

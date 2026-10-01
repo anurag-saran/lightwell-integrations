@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Patch the omnibus Runner ConfigMap with a registration token and scale up.
 #
-# Usage: ./scripts/register-openshift-gitlab-runner.sh <runner-authentication-token>
+# Usage: ./gitlab/register-runner.sh <runner-authentication-token>
 set -euo pipefail
 
 NS="${LIGHTWELL_GITLAB_NAMESPACE:-lightwell-gitlab}"

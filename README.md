@@ -62,44 +62,44 @@ mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
 Developers keep the existing org repository id `acmebank_java_repo` in
 `settings.xml` / `pom.xml` and mainly change the dependency to a `.rhlw` version.
 On OpenShift the JVM must also trust the router cert. Details:
-[`OPENSHIFT.md`](OPENSHIFT.md).
+[`openshift/README.md`](openshift/README.md).
 
 **JFrog Xray sync tool** (keep Lightwell OSV Custom Issues up to date on a schedule):
 
-Guide: [`XRAY.md`](XRAY.md). Package: [`xray/`](xray/) (`pip install ./xray` →
+Guide: [`xray/GUIDE.md`](xray/GUIDE.md). Package: [`xray/`](xray/) (`pip install ./xray` →
 `lightwell-xray-sync sync`, or build `xray/Dockerfile`).
 
 **GitHub plugin** (customer setup — GitHub.com or GHES with Actions):
 
-Guide: [`GITHUB.md`](GITHUB.md). Plugin repo:
+Guide: [`github/README.md`](github/README.md). Plugin repo:
 [lightwell-github-plugin-demo](https://github.com/anurag-saran/lightwell-github-plugin-demo).
 
 **GitLab plugin** (customer setup — any GitLab SaaS or self-managed):
 
-Guide: [`GITLAB.md`](GITLAB.md). Plugin repo:
+Guide: [`gitlab/README.md`](gitlab/README.md). Plugin repo:
 [lightwell-gitlab-plugin-demo](https://github.com/anurag-saran/lightwell-gitlab-plugin-demo).
 
 **GitLab on OpenShift** (this kit’s demo cluster):
 
 ```bash
-./scripts/setup-openshift-gitlab.sh
+./gitlab/setup-openshift.sh
 ```
 
-Guide: [`GITLAB-OPENSHIFT.md`](GITLAB-OPENSHIFT.md).
+Guide: [`gitlab/openshift.md`](gitlab/openshift.md).
 
 | Guide | When you need it |
 |---|---|
 | [`DEMO-LOCAL.md`](DEMO-LOCAL.md) | You are running Artifactory and Nexus on this machine |
-| [`OPENSHIFT.md`](OPENSHIFT.md) | You are running Artifactory and Nexus on OpenShift (public demo); includes developer laptop changes and smoke tests |
-| [`GITHUB.md`](GITHUB.md) | **Customer setup** for the Lightwell GitHub plugin (GitHub.com or GHES) |
-| [`GITLAB.md`](GITLAB.md) | **Customer setup** for the Lightwell GitLab plugin (any GitLab) |
-| [`GITLAB-OPENSHIFT.md`](GITLAB-OPENSHIFT.md) | Deploy GitLab CE + Runner on this OpenShift kit |
-| [`ARTIFACTORY.md`](ARTIFACTORY.md) | You already have an Artifactory server and want the click path |
-| [`XRAY.md`](XRAY.md) | **Customer tool**: sync Lightwell OSV → Xray Custom Issues (schedule) |
-| [`OSV-XRAY-DESIGN.md`](OSV-XRAY-DESIGN.md) | **Technical design**: OSV → Xray API mapping, and how that meets Artifactory |
-| [`NEXUS.md`](NEXUS.md) | You already have a Nexus server and want the click path |
-| [`SONARQUBE.md`](SONARQUBE.md) | You already use Sonar. Skip this if you do not. |
-| [`OSV-DEMO-GAPS.md`](OSV-DEMO-GAPS.md) | Eng: public-demo OSV vs Maven mismatches (clickable URLs) |
+| [`openshift/README.md`](openshift/README.md) | You are running Artifactory and Nexus on OpenShift (public demo); includes developer laptop changes and smoke tests |
+| [`github/README.md`](github/README.md) | **Customer setup** for the Lightwell GitHub plugin (GitHub.com or GHES) |
+| [`gitlab/README.md`](gitlab/README.md) | **Customer setup** for the Lightwell GitLab plugin (any GitLab) |
+| [`gitlab/openshift.md`](gitlab/openshift.md) | Deploy GitLab CE + Runner on this OpenShift kit |
+| [`artifactory/README.md`](artifactory/README.md) | You already have an Artifactory server and want the click path |
+| [`xray/GUIDE.md`](xray/GUIDE.md) | **Customer tool**: sync Lightwell OSV → Xray Custom Issues (schedule) |
+| [`xray/OSV-XRAY-DESIGN.md`](xray/OSV-XRAY-DESIGN.md) | **Technical design**: OSV → Xray API mapping, and how that meets Artifactory |
+| [`nexus/README.md`](nexus/README.md) | You already have a Nexus server and want the click path |
+| [`sonarqube/README.md`](sonarqube/README.md) | You already use Sonar. Skip this if you do not. |
+| [`xray/OSV-DEMO-GAPS.md`](xray/OSV-DEMO-GAPS.md) | Eng: public-demo OSV vs Maven mismatches (clickable URLs) |
 
 ## Words used here
 
@@ -165,4 +165,4 @@ you want a newer build. You do not recreate `lightwell-java` to pick it up.
 2. `acmebank_java_repo` members are `lightwell-java` then `maven-central` (Central last).
 3. `mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve` prints `BUILD SUCCESS`.
 4. The servers stored the jar. They did not decide whether your application should adopt it. That grade is upgrade-delta, a separate project.
-5. SonarQube, if you start it, still only checks your application code. See [`SONARQUBE.md`](SONARQUBE.md).
+5. SonarQube, if you start it, still only checks your application code. See [`sonarqube/README.md`](sonarqube/README.md).

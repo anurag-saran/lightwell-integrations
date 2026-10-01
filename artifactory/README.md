@@ -1,6 +1,6 @@
 # Integrate Lightwell with JFrog Artifactory
 
-Running Artifactory on this machine? Stop here and follow [`DEMO-LOCAL.md`](DEMO-LOCAL.md).
+Running Artifactory on this machine? Stop here and follow [`DEMO-LOCAL.md`](../DEMO-LOCAL.md).
 `./scripts/setup-demo.sh` creates the repositories for you. This page is the click path
 for an Artifactory server you already administer.
 
@@ -14,8 +14,8 @@ is the one URL your builds use; it searches the remotes in order and stops at th
 You still change `pom.xml` yourself when you want a newer build.
 
 Source procedure: [Configure Artifactory to use the Lightwell Network Java repository](https://docs.redhat.com/en/documentation/lightwell_network/current/configure-configure_artifactory_to_use_rhln_repository).
-This guide adds the **public demo** URL mode. Index: [`README.md`](README.md).
-Local Podman start: [`DEMO-LOCAL.md`](DEMO-LOCAL.md).
+This guide adds the **public demo** URL mode. Index: [`README.md`](../README.md).
+Local Podman start: [`DEMO-LOCAL.md`](../DEMO-LOCAL.md).
 
 ---
 
@@ -156,7 +156,7 @@ mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve
 
 `BUILD SUCCESS` means `acmebank_java_repo` → `lightwell-java` resolved a validated
 library (`commons-io` `2.11.0.rhlw-00001`), so the Lightwell virtual had to look past
-remediated. [`samples/settings.xml`](samples/settings.xml) is the Artifactory login
+remediated. [`samples/settings.xml`](../samples/settings.xml) is the Artifactory login
 (`admin` / `Lightwell-demo1`), not a Lightwell token.
 
 On a server you already run, use that server’s Artifactory URL for `acmebank_java_repo`
@@ -194,8 +194,8 @@ Clients use the existing org virtual repository:
 
 Local demo URL: `http://127.0.0.1:8082/artifactory/acmebank_java_repo`
 
-Sample builds: [`samples/demo/pom.xml`](samples/demo/pom.xml) and
-[`samples/prod/pom.xml`](samples/prod/pom.xml).
+Sample builds: [`samples/demo/pom.xml`](../samples/demo/pom.xml) and
+[`samples/prod/pom.xml`](../samples/prod/pom.xml).
 
 ```bash
 mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve
@@ -233,7 +233,7 @@ separate project.
 | Empty catalog in UI | **List Remote Artifacts** checked; fetch once so the remote caches |
 | Demo auth fields won’t save blank | Use any placeholder string for public-demo; smoke-test a jar fetch before presenting |
 | Jar fetch is Forbidden after a redirect | **Bypass HEAD Requests** must be checked. S3 presigned URLs reject HEAD |
-| Copy says the S3 link has expired | Lightwell returned a cached redirect. The remote is already saved; re-run `scripts/copy-sample.sh` later |
+| Copy says the S3 link has expired | Lightwell returned a cached redirect. The remote is already saved; re-run `./scripts/copy-sample.sh` later |
 | Script waits and prints clicks | The console API did not save a remote. Finish it in the UI, then re-run the script |
 
 ---
@@ -243,4 +243,4 @@ separate project.
 Resolving `.rhlw` jars is only half of the JFrog story. To feed **Xray Custom Issues**
 (so severity policies see Lightwell CVEs and fixed builds), run the scheduled sync tool:
 
-Guide: [`XRAY.md`](XRAY.md) — `pip install ./xray` → `lightwell-xray-sync sync`.
+Guide: [`../xray/GUIDE.md`](../xray/GUIDE.md) — `pip install ./xray` → `lightwell-xray-sync sync`.

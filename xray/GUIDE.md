@@ -5,10 +5,10 @@ OSV data (CVEs + `.rhlw` fixed versions) kept current as **Xray Custom Issues**.
 
 The tool is **`lightwell-xray-sync`**: a small Python CLI (and optional container)
 you schedule in CI or Kubernetes. It does **not** replace Artifactory remotes —
-those still deliver jars ([`ARTIFACTORY.md`](ARTIFACTORY.md)). It does **not** open
-SCM merge requests ([`GITLAB.md`](GITLAB.md) / [`GITHUB.md`](GITHUB.md)).
+those still deliver jars ([`../artifactory/README.md`](../artifactory/README.md)). It does **not** open
+SCM merge requests ([`../gitlab/README.md`](../gitlab/README.md) / [`../github/README.md`](../github/README.md)).
 
-Package sources: [`xray/`](xray/) (shipped with this kit or as a zip/bundle).
+Package sources: [this folder](.) (shipped with this kit or as a zip/bundle).
 
 > **OSS note:** The kit’s local/OpenShift **Artifactory OSS** often has **no Xray**.
 > Use a JFrog Platform trial or production instance with Xray enabled
@@ -25,7 +25,7 @@ Package sources: [`xray/`](xray/) (shipped with this kit or as a zip/bundle).
 | Scheduler | GitLab CI, GitHub Actions, or a Kubernetes CronJob (examples included) |
 
 Optional but recommended: Artifactory already wired to Lightwell
-([`ARTIFACTORY.md`](ARTIFACTORY.md)) so after developers adopt `.rhlw` versions,
+([`../artifactory/README.md`](../artifactory/README.md)) so after developers adopt `.rhlw` versions,
 Maven resolves them through your org virtual (`acmebank_java_repo` in this kit).
 
 ## How it fits (end-to-end)
@@ -155,13 +155,13 @@ docker run --rm \
 
 ## 5. Schedule ongoing updates
 
-Copy a ready-made job from [`xray/examples/`](xray/examples/):
+Copy a ready-made job from [`examples/`](examples/):
 
 | File | Platform |
 |---|---|
-| [`gitlab-ci.yml`](xray/examples/gitlab-ci.yml) | GitLab — **CI/CD → Schedules** (weekly) |
-| [`github-actions.yml`](xray/examples/github-actions.yml) | GitHub Actions cron + `workflow_dispatch` |
-| [`cronjob.yaml`](xray/examples/cronjob.yaml) | Kubernetes CronJob + Secret |
+| [`gitlab-ci.yml`](examples/gitlab-ci.yml) | GitLab — **CI/CD → Schedules** (weekly) |
+| [`github-actions.yml`](examples/github-actions.yml) | GitHub Actions cron + `workflow_dispatch` |
+| [`cronjob.yaml`](examples/cronjob.yaml) | Kubernetes CronJob + Secret |
 
 Recommended cadence: **weekly** (or daily if your OSV feed changes often).
 Re-running `sync` is safe: existing issue ids are **updated**, not duplicated.
@@ -183,7 +183,7 @@ Re-running `sync` is safe: existing issue ids are **updated**, not duplicated.
 After developers merge `.rhlw` bumps (manually or via the SCM plugin), Maven must
 hit your org virtual with Lightwell remotes **ahead of** Central:
 
-See [`ARTIFACTORY.md`](ARTIFACTORY.md) / [`NEXUS.md`](NEXUS.md).
+See [`../artifactory/README.md`](../artifactory/README.md) / [`../nexus/README.md`](../nexus/README.md).
 
 ## Demo checklist
 
@@ -234,7 +234,7 @@ lightwell-xray-sync self-test
 | Guide | When |
 |---|---|
 | [`OSV-XRAY-DESIGN.md`](OSV-XRAY-DESIGN.md) | Technical design and API mapping (OSV → Xray, applied on Artifactory) |
-| [`ARTIFACTORY.md`](ARTIFACTORY.md) | Wire Lightwell remotes + org virtual |
-| [`GITLAB.md`](GITLAB.md) / [`GITHUB.md`](GITHUB.md) | Remediation MRs/PRs |
-| [`xray/README.md`](xray/README.md) | Short package-oriented readme |
-| [`README.md`](README.md) | Kit index |
+| [`../artifactory/README.md`](../artifactory/README.md) | Wire Lightwell remotes + org virtual |
+| [`../gitlab/README.md`](../gitlab/README.md) / [`../github/README.md`](../github/README.md) | Remediation MRs/PRs |
+| [`README.md`](README.md) | Short package-oriented readme |
+| [`../README.md`](../README.md) | Kit index |

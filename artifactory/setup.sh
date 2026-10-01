@@ -3,8 +3,8 @@
 # UI: http://127.0.0.1:8082  (admin / the demo password printed at the end)
 set -euo pipefail
 
-# shellcheck source=lib-common.sh
-source "$(dirname "$0")/lib-common.sh"
+# shellcheck source=../scripts/lib-common.sh
+source "$(dirname "$0")/../scripts/lib-common.sh"
 integrations_require_podman
 
 NAME="${ARTIFACTORY_CONTAINER:-lightwell-artifactory}"
@@ -166,7 +166,7 @@ artifactory_clicks() {
   echo "  Advanced: check Bypass HEAD Requests (the feed redirects to S3, and S3 rejects HEAD)"
   echo "  Missed Retrieval Cache Period: 600 seconds"
   echo "  If the screen has Metadata Retrieval Cache Period, set that to 600 seconds too"
-  echo "Full click path: ARTIFACTORY.md"
+  echo "Full click path: artifactory/README.md"
 }
 
 export LIGHTWELL_COPY_USER="${AUTH%%:*}"
@@ -177,7 +177,7 @@ if [[ "$HTTP" == "200" || "$HTTP" == "201" ]]; then
   if [[ "${LIGHTWELL_SKIP_SAMPLE:-}" == "1" ]]; then
     echo "Skipping the sample jar copy."
   else
-    "$(dirname "$0")/copy-sample.sh" artifactory
+    "$(dirname "$0")/../scripts/copy-sample.sh" artifactory
   fi
   echo "Browse:          http://127.0.0.1:${UI_PORT}/ui/repos/tree/General/lightwell-java-remediated"
   exit 0
@@ -202,7 +202,7 @@ if [[ "$READY" == "1" ]]; then
   if [[ "${LIGHTWELL_SKIP_SAMPLE:-}" == "1" ]]; then
     echo "Skipping the sample jar copy."
   else
-    "$(dirname "$0")/copy-sample.sh" artifactory
+    "$(dirname "$0")/../scripts/copy-sample.sh" artifactory
   fi
   echo "Browse:          http://127.0.0.1:${UI_PORT}/ui/repos/tree/General/lightwell-java-remediated"
   exit 0

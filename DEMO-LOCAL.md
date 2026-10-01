@@ -3,9 +3,9 @@
 One command starts Artifactory and Nexus, connects them to Lightwell, and copies the
 small public catalog. Maven then fetches a jar from those local servers.
 
-Click paths for a server you already run: [`ARTIFACTORY.md`](ARTIFACTORY.md),
-[`NEXUS.md`](NEXUS.md). SonarQube is optional and does not fetch Lightwell jars
-([`SONARQUBE.md`](SONARQUBE.md)).
+Click paths for a server you already run: [`artifactory/README.md`](artifactory/README.md),
+[`nexus/README.md`](nexus/README.md). SonarQube is optional and does not fetch Lightwell jars
+([`sonarqube/README.md`](sonarqube/README.md)).
 
 ## Before you start
 
@@ -85,7 +85,7 @@ mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve \
 After the production setup below, change `lightwell.version` in that file to the
 build you are adopting.
 
-OpenShift Routes and TLS notes: [`OPENSHIFT.md`](OPENSHIFT.md).
+OpenShift Routes and TLS notes: [`openshift/README.md`](openshift/README.md).
 
 ## 3. Production account
 
@@ -121,13 +121,13 @@ that jar.
 | `acmebank_java_repo` | The URL Maven uses. Resolve order: remediated → validated → maven-central |
 | `lightwell-python-validated` | Public-demo Python wheels. Created by `setup-demo.sh` |
 
-`setup-artifactory.sh` and `setup-nexus.sh` are the scripts the two commands above
+`artifactory/setup.sh` and `nexus/setup.sh` are the scripts the two commands above
 call. You do not need to run them yourself.
 
 ## Optional: SonarQube
 
 ```bash
-./scripts/setup-sonarqube.sh
+./sonarqube/setup.sh
 ```
 
 Open http://127.0.0.1:9000/ and log in as `admin` / `Lightwell-demo1`. SonarQube checks

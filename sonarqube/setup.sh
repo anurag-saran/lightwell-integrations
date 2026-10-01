@@ -4,8 +4,8 @@
 # UI: http://127.0.0.1:9000
 set -euo pipefail
 
-# shellcheck source=lib-common.sh
-source "$(dirname "$0")/lib-common.sh"
+# shellcheck source=../scripts/lib-common.sh
+source "$(dirname "$0")/../scripts/lib-common.sh"
 integrations_require_podman
 
 NAME="${SONAR_CONTAINER:-lightwell-sonarqube}"
@@ -57,4 +57,4 @@ echo "Login:        admin / ${DEMO_PASSWORD}"
 echo
 echo "Sonar quality gate = app health. A dependency-upgrade grade (upgrade-delta)"
 echo "is a separate project and a separate gate. Both must pass."
-echo "See SONARQUBE.md"
+echo "See sonarqube/README.md"

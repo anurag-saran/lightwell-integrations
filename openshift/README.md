@@ -2,12 +2,12 @@
 
 Deploys Artifactory OSS and Nexus OSS into a new namespace and connects them to the
 anonymous public Lightwell demo (same repositories as
-[`scripts/setup-demo.sh`](scripts/setup-demo.sh)).
+[`scripts/setup-demo.sh`](../scripts/setup-demo.sh)).
 
 This path uses **Deployments + Routes** (and `emptyDir` for demo data). It does
 **not** install JFrog or Sonatype Operators.
 
-Local Podman demo: [`DEMO-LOCAL.md`](DEMO-LOCAL.md).
+Local Podman demo: [`DEMO-LOCAL.md`](../DEMO-LOCAL.md).
 
 ## Demo URLs and login
 
@@ -23,7 +23,7 @@ On this kit’s OpenShift cluster (after `./scripts/setup-openshift-demo.sh`):
 | **Username** | `admin` |
 | **Password** | `Lightwell-demo1` |
 
-Maven repository URLs (same login via [`samples/settings.xml`](samples/settings.xml)):
+Maven repository URLs (same login via [`samples/settings.xml`](../samples/settings.xml)):
 
 | Service | Maven URL (existing org virtual) |
 |---|---|
@@ -65,7 +65,7 @@ From this repository:
 ./scripts/setup-openshift-demo.sh
 ```
 
-That applies [`openshift/`](openshift/), waits for the Deployments, sets
+That applies [`kustomization.yaml`](kustomization.yaml), waits for the Deployments, sets
 `admin` / `Lightwell-demo1`, accepts the Nexus Community Edition EULA, creates:
 
 - `lightwell-java-remediated` / `lightwell-java-validated` (remotes/proxies)
@@ -119,7 +119,7 @@ Do **not** put the Lightwell service-account token in `pom.xml`, `settings.xml`,
 
 ### Sample `pom.xml`
 
-Full file: [`samples/demo/pom.xml`](samples/demo/pom.xml). The important parts:
+Full file: [`samples/demo/pom.xml`](../samples/demo/pom.xml). The important parts:
 
 ```xml
 <properties>
@@ -167,7 +167,7 @@ and override only when needed:
 
 ### Sample Maven `settings.xml` (beyond the pom)
 
-Full file: [`samples/settings.xml`](samples/settings.xml). Copy the `<server>`
+Full file: [`samples/settings.xml`](../samples/settings.xml). Copy the `<server>`
 block into `~/.m2/settings.xml` (or keep using `-s`):
 
 ```xml
@@ -210,7 +210,7 @@ mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
 `acmebank_java_repo` → `lightwell-java` (validated feed). That jar is not on
 remediated, so the Lightwell virtual/group had to search past the first member.
 
-A second sample ([`samples/prod/pom.xml`](samples/prod/pom.xml)) resolves
+A second sample ([`samples/prod/pom.xml`](../samples/prod/pom.xml)) resolves
 `snakeyaml` `1.33.0.rhlw-00001` the same way — useful after you change
 `lightwell.version` for a production adopt.
 
@@ -268,8 +268,8 @@ same commands.
 ## Image mirrors
 
 If the cluster cannot pull from the public registries, mirror the images and
-edit the `image:` fields in [`openshift/artifactory.yaml`](openshift/artifactory.yaml)
-and [`openshift/nexus.yaml`](openshift/nexus.yaml):
+edit the `image:` fields in [`artifactory.yaml`](artifactory.yaml)
+and [`nexus.yaml`](nexus.yaml):
 
 - `releases-docker.jfrog.io/jfrog/artifactory-oss:latest`
 - `docker.io/sonatype/nexus3:latest`
@@ -286,7 +286,7 @@ pods are deleted.
 ## Not in this path
 
 - OLM Operators for Artifactory or Nexus
-- Production Lightwell user/token (use the local [`scripts/setup-prod.sh`](scripts/setup-prod.sh) pattern later, or set credentials on the remotes by hand per [`ARTIFACTORY.md`](ARTIFACTORY.md))
+- Production Lightwell user/token (use the local [`scripts/setup-prod.sh`](../scripts/setup-prod.sh) pattern later, or set credentials on the remotes by hand per [`../artifactory/README.md`](../artifactory/README.md))
 - SonarQube
 
-GitLab CE + Lightwell plugin demo on the same cluster: [`GITLAB-OPENSHIFT.md`](GITLAB-OPENSHIFT.md).
+GitLab CE + Lightwell plugin demo on the same cluster: [`../gitlab/openshift.md`](../gitlab/openshift.md).

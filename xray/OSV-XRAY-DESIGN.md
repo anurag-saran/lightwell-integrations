@@ -2,9 +2,9 @@
 
 This document describes how Red Hat Lightwell OSV advisories are synced onto a
 JFrog Platform that already stores Lightwell jars in Artifactory. It is the
-design behind [`lightwell-xray-sync`](xray/). Operator steps are in
-[`XRAY.md`](XRAY.md). Repository layout for the jars is in
-[`ARTIFACTORY.md`](ARTIFACTORY.md).
+design behind [`lightwell-xray-sync`](.). Operator steps are in
+[`GUIDE.md`](GUIDE.md). Repository layout for the jars is in
+[`../artifactory/README.md`](../artifactory/README.md).
 
 ## 1. What is synced, and where it lands
 
@@ -64,7 +64,7 @@ GET …/java/remediated/…jar          Artifactory remote cache
 | `lightwell_xray_sync.map` | One OSV document → one or more Custom Issue JSON bodies. |
 | `lightwell_xray_sync.client` | Authenticated POST (create) and PUT (update). |
 | `lightwell_xray_sync.sync` | Orchestration, 50 ms pause between writes, `xray-sync-summary.json`. |
-| Artifactory remotes | Separate path. Cache Lightwell Maven bytes. Configured per [`ARTIFACTORY.md`](ARTIFACTORY.md), not by this CLI. |
+| Artifactory remotes | Separate path. Cache Lightwell Maven bytes. Configured per [`../artifactory/README.md`](../artifactory/README.md), not by this CLI. |
 | Xray watches / policies | Customer-owned. The tool does not create them. Existing severity policies apply to `provider=Lightwell` issues. |
 
 Commands:

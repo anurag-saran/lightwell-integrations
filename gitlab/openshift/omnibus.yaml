@@ -1,6 +1,6 @@
 # Omnibus GitLab CE — single Deployment for small OpenShift demos (SNO-friendly).
 # Prefer this when the full gitlab/gitlab Helm chart OOMs the node.
-# Install path: LIGHTWELL_GITLAB_MODE=omnibus ./scripts/setup-openshift-gitlab.sh
+# Install path: LIGHTWELL_GITLAB_MODE=omnibus ./gitlab/setup-openshift.sh
 ---
 apiVersion: v1
 kind: Namespace
@@ -60,7 +60,7 @@ spec:
                 secretKeyRef:
                   name: lightwell-gitlab-root
                   key: password
-            # Patched by setup-openshift-gitlab.sh to the admitted Route URL.
+            # Patched by gitlab/setup-openshift.sh to the admitted Route URL.
             - name: EXTERNAL_URL
               value: "https://gitlab.apps.asaran.na-launch.com"
             - name: GITLAB_OMNIBUS_CONFIG

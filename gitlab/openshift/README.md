@@ -1,7 +1,7 @@
 # GitLab on OpenShift (Lightwell demo)
 #
-# Customer setup (any GitLab): ../../GITLAB.md
-# Kit deploy / this cluster:   ../../GITLAB-OPENSHIFT.md
+# Customer setup (any GitLab): ../README.md
+# Kit deploy / this cluster:   ../openshift.md
 #
 # Two install modes (setup script):
 #   LIGHTWELL_GITLAB_MODE=omnibus  (default) — single gitlab/gitlab-ce Deployment + Runner

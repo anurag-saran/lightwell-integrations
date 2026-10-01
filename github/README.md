@@ -7,7 +7,7 @@ Plugin project sources: `lightwell-github-plugin-demo` (shipped with this kit or
 provided as a zip/bundle). Companion detail (scripts, catalog, local dry-run): that
 repo’s README.
 
-GitLab / on-prem customers: use [`GITLAB.md`](GITLAB.md) instead.
+GitLab / on-prem customers: use [`../gitlab/README.md`](../gitlab/README.md) instead.
 
 ## What you need
 
@@ -19,7 +19,7 @@ GitLab / on-prem customers: use [`GITLAB.md`](GITLAB.md) instead.
 | Fine-grained PAT (or classic `repo`) | Contents + Pull requests on plugin and target apps |
 
 Optional: Artifactory or Nexus already wired to Lightwell
-([`ARTIFACTORY.md`](ARTIFACTORY.md) / [`NEXUS.md`](NEXUS.md)) so after you merge
+([`../artifactory/README.md`](../artifactory/README.md) / [`../nexus/README.md`](../nexus/README.md)) so after you merge
 the PR, Maven resolves `.rhlw` versions through your org virtual
 (`acmebank_java_repo` in this kit).
 
@@ -140,7 +140,7 @@ Point Maven at your **existing org virtual** (this kit: `acmebank_java_repo`):
 2. Lightwell validated  
 3. Maven Central (lowest)
 
-See [`ARTIFACTORY.md`](ARTIFACTORY.md) / [`NEXUS.md`](NEXUS.md).
+See [`../artifactory/README.md`](../artifactory/README.md) / [`../nexus/README.md`](../nexus/README.md).
 
 ## Demo checklist
 

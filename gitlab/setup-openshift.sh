@@ -8,11 +8,11 @@
 # By default scales Nexus in lightwell-demo to 0 so a SNO has room for GitLab.
 # Set LIGHTWELL_KEEP_NEXUS=1 to skip that.
 #
-# Usage: ./scripts/setup-openshift-gitlab.sh
+# Usage: ./gitlab/setup-openshift.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-# shellcheck source=lib-common.sh
+# shellcheck source=../scripts/lib-common.sh
 source "$ROOT/scripts/lib-common.sh"
 
 NS="${LIGHTWELL_GITLAB_NAMESPACE:-lightwell-gitlab}"
@@ -75,7 +75,7 @@ if [[ "$MODE" == "helm" ]]; then
     --dry-run=client -o yaml | oc apply -f - >/dev/null
   helm upgrade --install lightwell-gitlab gitlab/gitlab \
     -n "$NS" \
-    -f "$ROOT/openshift/gitlab/values-demo.yaml" \
+    -f "$ROOT/gitlab/openshift/values-demo.yaml" \
     --set global.hosts.domain="$DOMAIN" \
     --set global.hosts.gitlab.name="$GITLAB_HOST" \
     --timeout 45m \
@@ -87,7 +87,7 @@ else
   # Patch password + EXTERNAL_URL into omnibus manifests, then apply.
   TMP="$(mktemp -d)"
   trap 'rm -rf "$TMP"' EXIT
-  cp "$ROOT/openshift/gitlab/omnibus.yaml" "$TMP/omnibus.yaml"
+  cp "$ROOT/gitlab/openshift/omnibus.yaml" "$TMP/omnibus.yaml"
   # shellcheck disable=SC2016
   python3 - "$TMP/omnibus.yaml" "$DEMO_PASSWORD" "$EXTERNAL_URL" "$GITLAB_HOST" <<'PY'
 import pathlib, sys
@@ -131,7 +131,7 @@ echo "Login:      root / ${DEMO_PASSWORD}"
 echo
 echo "Next — register a Runner (omnibus mode starts with replicas=0 until token is set):"
 echo "  1. GitLab UI → Admin → CI/CD → Runners → New instance runner → copy token"
-echo "  2. ./scripts/register-openshift-gitlab-runner.sh <runner-token>"
-echo "  3. Import payments-service + lightwell-gitlab-plugin-demo (see GITLAB-OPENSHIFT.md)"
+echo "  2. ./gitlab/register-runner.sh <runner-token>"
+echo "  3. Import payments-service + lightwell-gitlab-plugin-demo (see gitlab/openshift.md)"
 echo
 echo "Demo password is for this OpenShift demo only."

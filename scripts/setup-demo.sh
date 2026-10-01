@@ -18,8 +18,8 @@ export LIGHTWELL_SKIP_SAMPLE=1
 echo "== Public Lightwell demo =="
 echo "No user or token. Feeds are the public demo."
 
-"$ROOT/scripts/setup-artifactory.sh"
-"$ROOT/scripts/setup-nexus.sh"
+"$ROOT/artifactory/setup.sh"
+"$ROOT/nexus/setup.sh"
 
 set +e
 "$ROOT/scripts/copy-catalog.sh" both all

@@ -1,5 +1,5 @@
 # Demo values for gitlab/gitlab Helm chart (Community Edition).
-# Usage: see scripts/setup-openshift-gitlab.sh
+# Usage: see gitlab/setup-openshift.sh
 #
 # Domain must match your OpenShift apps wildcard, e.g.
 #   apps.asaran.na-launch.com  →  gitlab.apps.asaran.na-launch.com

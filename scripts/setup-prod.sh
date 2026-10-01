@@ -37,8 +37,8 @@ echo "== Production Lightwell =="
 echo "User: ${LIGHTWELL_USER}"
 echo "Token is set and will not be printed."
 
-"$ROOT/scripts/setup-artifactory.sh"
-"$ROOT/scripts/setup-nexus.sh"
+"$ROOT/artifactory/setup.sh"
+"$ROOT/nexus/setup.sh"
 "$ROOT/scripts/copy-catalog.sh" both all
 
 feed="$(integrations_lightwell_feed_url java remediated)"

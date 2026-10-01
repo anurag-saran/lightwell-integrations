@@ -4,7 +4,7 @@ Skip this page if you do not already use SonarQube. SonarQube does not fetch Lig
 jars. To start it locally anyway:
 
 ```bash
-./scripts/setup-sonarqube.sh
+./sonarqube/setup.sh
 ```
 
 Open http://127.0.0.1:9000/ and log in as `admin` / `Lightwell-demo1`.
@@ -14,7 +14,7 @@ bump. Do not hunt for one in Marketplace. This guide explains how Sonar sits nex
 that grade.
 
 upgrade-delta is a separate project. It answers which tests a jar change owes. This
-repository does not include it. Index: [`README.md`](README.md).
+repository does not include it. Index: [`README.md`](../README.md).
 
 ---
 

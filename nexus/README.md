@@ -1,6 +1,6 @@
 # Integrate Lightwell with Sonatype Nexus
 
-Running Nexus on this machine? Stop here and follow [`DEMO-LOCAL.md`](DEMO-LOCAL.md).
+Running Nexus on this machine? Stop here and follow [`DEMO-LOCAL.md`](../DEMO-LOCAL.md).
 `./scripts/setup-demo.sh` creates the repositories for you. This page is the click path
 for a Nexus server you already administer.
 
@@ -14,8 +14,8 @@ the one URL your builds use; it searches the proxies in order and stops at the f
 You still change `pom.xml` yourself when you want a newer build.
 
 Source procedure: [Configure Nexus to use the Lightwell Network repository](https://docs.redhat.com/en/documentation/lightwell_network/current/configure-configure_nexus_to_use_rhln_repository).
-This guide adds the **public demo** URL mode. Index: [`README.md`](README.md).
-Local Podman start: [`DEMO-LOCAL.md`](DEMO-LOCAL.md).
+This guide adds the **public demo** URL mode. Index: [`README.md`](../README.md).
+Local Podman start: [`DEMO-LOCAL.md`](../DEMO-LOCAL.md).
 
 ---
 
@@ -128,7 +128,7 @@ validated → Maven Central. Search stops at the first member that has the file.
 `./scripts/setup-demo.sh` and `./scripts/setup-prod.sh` create these proxies, the
 Lightwell group, and `acmebank_java_repo` for you (layout Strict, metadata age 60
 minutes, negative cache 60 minutes, auto-block off). You do not need to run
-`scripts/setup-nexus.sh` yourself when you use those commands.
+`./nexus/setup.sh` yourself when you use those commands.
 
 ---
 
@@ -169,8 +169,8 @@ Clients use the existing org group repository:
 
 Local demo URL: `http://127.0.0.1:8083/repository/acmebank_java_repo`
 
-Sample builds: [`samples/demo/pom.xml`](samples/demo/pom.xml) and
-[`samples/prod/pom.xml`](samples/prod/pom.xml).
+Sample builds: [`samples/demo/pom.xml`](../samples/demo/pom.xml) and
+[`samples/prod/pom.xml`](../samples/prod/pom.xml).
 
 ```bash
 mvn -f samples/demo/pom.xml -s samples/settings.xml dependency:resolve \
@@ -182,7 +182,7 @@ mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve \
 (`samples/prod/pom.xml` defaults to the OpenShift Artifactory Route; pass the Nexus
 URL above for local Nexus.)
 
-[`samples/settings.xml`](samples/settings.xml) is the local demo login. On a Nexus
+[`samples/settings.xml`](../samples/settings.xml) is the local demo login. On a Nexus
 server you already run, put that server’s login in the same server id
 `acmebank_java_repo`.
 
@@ -215,5 +215,5 @@ the owed tests. That grade is upgrade-delta, a separate project.
 | Non-`.rhlw` / Central jar not found | `maven-central` is a member of `acmebank_java_repo` and listed **after** `lightwell-java` |
 | CI still hits packages.redhat.com | Client still lists the Lightwell URL instead of `acmebank_java_repo` |
 | Demo auth required by UI | Placeholder credentials + smoke-test before presenting |
-| Copy says the S3 link has expired | Lightwell returned a cached redirect. The proxy stays online; re-run `scripts/copy-sample.sh nexus` later |
-| Proxy is offline after one failed fetch | Re-run `scripts/setup-nexus.sh` or recreate the proxy with auto-block off |
+| Copy says the S3 link has expired | Lightwell returned a cached redirect. The proxy stays online; re-run `./scripts/copy-sample.sh nexus` later |
+| Proxy is offline after one failed fetch | Re-run `./nexus/setup.sh` or recreate the proxy with auto-block off |

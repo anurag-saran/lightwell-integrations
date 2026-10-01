@@ -2,7 +2,7 @@
 # Seed plugin + target app onto GitLab from local trees only (no GitHub import).
 #
 # Usage:
-#   ./scripts/seed-gitlab-lightwell-projects.sh https://gitlab.apps.example.com "$TOKEN"
+#   ./gitlab/seed-projects.sh https://gitlab.apps.example.com "$TOKEN"
 set -euo pipefail
 
 GITLAB_URL="${1:?GitLab base URL required (https://gitlab....)}"

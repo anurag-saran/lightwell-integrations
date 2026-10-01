@@ -4,7 +4,7 @@ Customer-facing CLI that **fetches Lightwell OSV** advisories and **upserts JFro
 Xray Custom Issues** (CVEs + `.rhlw` fixed versions). Schedule it so Xray stays
 current without manual uploads.
 
-**Full setup guide:** [`../XRAY.md`](../XRAY.md)
+**Full setup guide:** [`GUIDE.md`](GUIDE.md)
 
 ## Quick start
 
@@ -48,4 +48,4 @@ lightwell-xray-sync self-test
 Env: `JFROG_URL`, `JFROG_TOKEN`, optional `JFROG_USER`, `LIGHTWELL_OSV_URL`.
 
 Artifactory remotes for jar resolve are **not** part of this package — see
-[`../ARTIFACTORY.md`](../ARTIFACTORY.md).
+[`../artifactory/README.md`](../artifactory/README.md).
