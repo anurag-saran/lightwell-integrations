@@ -6,14 +6,18 @@
   Same story as samples/demo/pom.xml: Maven stays on acmebank_java_repo.
   Server resolve order: remediated → validated → maven-central (lowest).
   Change lightwell.version to the .rhlw build you are adopting.
-  Artifactory/Nexus login: -s samples/settings.xml (admin / Lightwell-demo1).
+  Nexus login: -s samples/settings.xml.
 
-  OpenShift Artifactory (default below):
+  OpenShift Nexus (default below):
     mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve
 
-  OpenShift Nexus:
+  OpenShift Artifactory:
     mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve \
-      -Dacmebank.repo.url=https://nexus-lightwell-demo.apps.asaran.na-launch.com/repository/acmebank_java_repo
+      -Dacmebank.repo.url=https://artifactory-lightwell-demo.apps.asaran.na-launch.com/artifactory/acmebank_java_repo
+
+  JFrog trial:
+    mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve \
+      -Dacmebank.repo.url=https://trial72lbp4.jfrog.io/artifactory/acmebank_java_repo
 
   Local Podman Artifactory:
     mvn -f samples/prod/pom.xml -s samples/settings.xml dependency:resolve \
@@ -34,7 +38,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <acmebank.repo.url>https://artifactory-lightwell-demo.apps.asaran.na-launch.com/artifactory/acmebank_java_repo</acmebank.repo.url>
+    <acmebank.repo.url>https://nexus-lightwell-demo.apps.asaran.na-launch.com/repository/acmebank_java_repo</acmebank.repo.url>
     <lightwell.version>1.33.0.rhlw-00001</lightwell.version>
   </properties>
 
