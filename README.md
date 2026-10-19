@@ -79,6 +79,11 @@ Guide: [`github/README.md`](github/README.md). Plugin repo:
 Guide: [`gitlab/README.md`](gitlab/README.md). Plugin repo:
 [lightwell-gitlab-plugin-demo](https://github.com/anurag-saran/lightwell-gitlab-plugin-demo).
 
+**Bitbucket Cloud plugin** (customer setup — bitbucket.org with Pipelines):
+
+Guide: [`bitbucket/README.md`](bitbucket/README.md). Demo plugin repo:
+[lightwell-bitbucket-plugin-demo](https://bitbucket.org/asaranrht/lightwell-bitbucket-plugin-demo).
+
 **GitLab on OpenShift** (this kit’s demo cluster):
 
 ```bash
@@ -93,6 +98,7 @@ Guide: [`gitlab/openshift.md`](gitlab/openshift.md).
 | [`openshift/README.md`](openshift/README.md) | You are running Artifactory and Nexus on OpenShift (public demo); includes developer laptop changes and smoke tests |
 | [`github/README.md`](github/README.md) | **Customer setup** for the Lightwell GitHub plugin (GitHub.com or GHES) |
 | [`gitlab/README.md`](gitlab/README.md) | **Customer setup** for the Lightwell GitLab plugin (any GitLab) |
+| [`bitbucket/README.md`](bitbucket/README.md) | **Customer setup** for the Lightwell Bitbucket Cloud plugin |
 | [`gitlab/openshift.md`](gitlab/openshift.md) | Deploy GitLab CE + Runner on this OpenShift kit |
 | [`artifactory/README.md`](artifactory/README.md) | You already have an Artifactory server and want the click path |
 | [`xray/GUIDE.md`](xray/GUIDE.md) | **Customer tool**: sync Lightwell OSV → Xray Custom Issues (schedule) |
